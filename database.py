@@ -86,9 +86,19 @@ def crear_base_de_datos():
         )
     ''')
 
+    # Tabla de Gestión de Planes
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS planes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre_plan TEXT NOT NULL,
+            precio REAL NOT NULL
+        )
+    ''')
+
     conexion.commit()
     conexion.close()
     print("Base de datos actualizada con ficha médica completa.")
 
 if __name__ == "__main__":
     crear_base_de_datos()
+    
