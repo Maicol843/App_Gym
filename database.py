@@ -1,26 +1,13 @@
-# 1. Planificación de la Estructura
-# Antes de escribir la primera línea de código, debemos entender cómo se conectarán las piezas. 
-# La aplicación seguirá una arquitectura básica de Modelo-Vista-Controlador (MVC) de forma 
-# simplificada:
-# a. Base de Datos (Model): Tablas para Clientes, Membresías, Pagos, Asistencia y Rutinas.
-# b.Interfaz Gráfica (View): Ventanas para el Dashboard, el registro y las tablas visuales.
-# c. Lógica de Negocio (Controller): Funciones que calculan si un pago está vencido, 
-# generan el QR o crean el PDF.
-# Requisitos previos
-# Para comenzar, necesitarás instalar Python en tu equipo y ejecutar el siguiente 
-# comando en tu terminal para instalar las librerías necesarias:
-# pip install customtkinter pillow pandas reportlab qrcode opencv-python
-#. 2. Paso 1: Diseño de la Base de Datos
-# Lo primero es crear el "cerebro" donde guardaremos todo. Usaremos SQLite. 
-# Aquí te presento el código para inicializar la base de datos y las tablas principales.
-# Código de Inicialización (database.py):
 import sqlite3
 
 def crear_base_de_datos():
     conexion = sqlite3.connect("gimnasio.db")
     cursor = conexion.cursor()
+    
+    # Activar modo WAL para evitar bloqueos de base de datos
+    cursor.execute("PRAGMA journal_mode=WAL;")
 
-    # Tabla de Clientes con Ficha Médica Completa
+    # 1. TABLA DE CLIENTES (Actualizada con Plan y Fecha de Inscripción)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS clientes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,6 +23,11 @@ def crear_base_de_datos():
             altura REAL,
             peso REAL,
             grupo_sanguineo TEXT,
+            
+            -- Plan y Gestión
+            plan_seleccionado TEXT,
+            fecha_inscripcion DATE,
+            fecha_vencimiento DATE,
             
             -- Ficha Médica (0 = No, 1 = Si)
             patologia_columna INTEGER DEFAULT 0,
@@ -55,16 +47,20 @@ def crear_base_de_datos():
             dolores_articulares INTEGER DEFAULT 0,
             alteracion INTEGER DEFAULT 0,
             problemas_rodilla_tobillo INTEGER DEFAULT 0,
-            convulsiones INTEGER DEFAULT 0,
-            
-            -- Gestión de Gimnasio
-            fecha_inscripcion DATE,
-            plan_id INTEGER,
-            fecha_vencimiento DATE
+            convulsiones INTEGER DEFAULT 0
         )
     ''')
 
-    #Tabla de Pagos
+    # 2. TABLA DE PLANES (Para la ventana de Gestión de Gimnasio)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS planes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre_plan TEXT NOT NULL,
+            precio REAL NOT NULL
+        )
+    ''')
+
+    # 3. TABLA DE PAGOS
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS pagos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -76,7 +72,7 @@ def crear_base_de_datos():
         )
     ''')
 
-    # Tabla de Asistencia
+    # 4. TABLA DE ASISTENCIA
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS asistencia (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,19 +82,23 @@ def crear_base_de_datos():
         )
     ''')
 
-    # Tabla de Gestión de Planes
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS planes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre_plan TEXT NOT NULL,
-            precio REAL NOT NULL
-        )
-    ''')
+    # --- LÓGICA DE ACTUALIZACIÓN ---
+    # Si la tabla ya existía, intentamos agregar las columnas nuevas por si acaso
+    columnas_nuevas = [
+        ("plan_seleccionado", "TEXT"),
+        ("fecha_inscripcion", "DATE")
+    ]
+    
+    for columna, tipo in columnas_nuevas:
+        try:
+            cursor.execute(f"ALTER TABLE clientes ADD COLUMN {columna} {tipo}")
+        except sqlite3.OperationalError:
+            # Si la columna ya existe, SQLite dará error, simplemente lo ignoramos
+            pass
 
     conexion.commit()
     conexion.close()
-    print("Base de datos actualizada con ficha médica completa.")
+    print("Base de datos lista y actualizada.")
 
 if __name__ == "__main__":
     crear_base_de_datos()
-    
