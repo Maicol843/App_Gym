@@ -17,7 +17,6 @@ class RegistroClientes(ctk.CTk):
         self.crear_widgets()
 
     def obtener_planes_db(self):
-        """Busca los planes registrados para el OptionMenu"""
         planes = ["Seleccione un plan..."]
         try:
             with sqlite3.connect("gimnasio.db") as conn:
@@ -43,7 +42,6 @@ class RegistroClientes(ctk.CTk):
         self.entry_domicilio = self.crear_campo_grid(self.frame_datos, "Domicilio:", 1, 0)
         self.entry_telefono = self.crear_campo_grid(self.frame_datos, "Teléfono:", 1, 1)
         
-        # Fecha de Nacimiento y Edad
         ctk.CTkLabel(self.frame_datos, text="Fecha Nac. (DD-MM-AAAA):").grid(row=2, column=0, pady=(10, 0), padx=20, sticky="w")
         self.entry_nacimiento = ctk.CTkEntry(self.frame_datos, width=220, placeholder_text="Ej: 15-08-1995")
         self.entry_nacimiento.grid(row=3, column=0, pady=5, padx=20, sticky="w")
@@ -52,8 +50,8 @@ class RegistroClientes(ctk.CTk):
         self.label_edad = ctk.CTkLabel(self.frame_datos, text="Edad: --", font=("Arial", 12, "bold"), text_color="cyan")
         self.label_edad.grid(row=3, column=1, pady=5, padx=20, sticky="w")
 
-        # --- SECCIÓN: PLAN Y GESTIÓN (MODIFICADA) ---
-        self.seccion_titulo("Plan de Entrenamiento")
+        # --- SECCIÓN: PLAN Y GESTIÓN ---
+        self.seccion_titulo("Plan y Pago")
         self.frame_gestion = ctk.CTkFrame(self.scroll_frame, fg_color="transparent")
         self.frame_gestion.pack(pady=10, padx=20)
 
@@ -61,11 +59,15 @@ class RegistroClientes(ctk.CTk):
         self.combo_plan = ctk.CTkOptionMenu(self.frame_gestion, width=220, values=self.obtener_planes_db())
         self.combo_plan.grid(row=1, column=0, padx=20, pady=5)
 
-        ctk.CTkLabel(self.frame_gestion, text="Fecha de Inscripción (DD-MM-AAAA):").grid(row=0, column=1, padx=20, sticky="w")
+        ctk.CTkLabel(self.frame_gestion, text="Estado de Pago:").grid(row=0, column=1, padx=20, sticky="w")
+        self.combo_pago = ctk.CTkOptionMenu(self.frame_gestion, width=220, values=["Pendiente", "Realizado"])
+        self.combo_pago.grid(row=1, column=1, padx=20, pady=5)
+        self.combo_pago.set("Pendiente")
+
+        ctk.CTkLabel(self.frame_gestion, text="Fecha de Inscripción:").grid(row=2, column=0, padx=20, pady=(10,0), sticky="w")
         self.entry_fecha_ins = ctk.CTkEntry(self.frame_gestion, width=220)
-        # Insertamos la fecha de hoy por defecto, pero ahora el usuario puede borrarla y escribir
         self.entry_fecha_ins.insert(0, datetime.now().strftime("%d-%m-%Y"))
-        self.entry_fecha_ins.grid(row=1, column=1, padx=20, pady=5)
+        self.entry_fecha_ins.grid(row=3, column=0, padx=20, pady=5)
 
         # --- SECCIÓN: DATOS FÍSICOS ---
         self.seccion_titulo("Datos Físicos")
@@ -105,13 +107,11 @@ class RegistroClientes(ctk.CTk):
             sw = ctk.CTkSwitch(self.frame_switches, text=texto, variable=var)
             sw.grid(row=i//2, column=i%2, padx=30, pady=5, sticky="w")
 
-        # --- BOTÓN REGISTRAR ---
         self.btn_registrar = ctk.CTkButton(self.scroll_frame, text="REGISTRAR E INSCRIBIR", 
                                            width=400, height=50, font=("Arial", 16, "bold"),
                                            fg_color="#2ecc71", hover_color="#27ae60", command=self.guardar_datos)
         self.btn_registrar.pack(pady=40)
 
-    # --- FUNCIONES AUXILIARES ---
     def seccion_titulo(self, texto):
         ctk.CTkLabel(self.scroll_frame, text=texto, font=("Arial", 18, "bold"), text_color="#FFCC00").pack(pady=(20, 5))
 
@@ -163,7 +163,6 @@ class RegistroClientes(ctk.CTk):
             apellido = self.entry_apellido.get().strip()
             if not nombre or not apellido: raise ValueError("Nombre y Apellido son obligatorios")
 
-            # Formateo de fechas para la BD
             f_nac_raw = self.entry_nacimiento.get().strip()
             fecha_nac_bd = datetime.strptime(f_nac_raw, "%d-%m-%Y").strftime("%Y-%m-%d")
             
@@ -171,7 +170,6 @@ class RegistroClientes(ctk.CTk):
             fecha_ins_obj = datetime.strptime(f_ins_raw, "%d-%m-%Y")
             fecha_ins_bd = fecha_ins_obj.strftime("%Y-%m-%d")
 
-            # --- CÁLCULO AUTOMÁTICO DE VENCIMIENTO ---
             with sqlite3.connect("gimnasio.db") as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT dias FROM planes WHERE nombre_plan=?", (self.combo_plan.get(),))
@@ -186,6 +184,7 @@ class RegistroClientes(ctk.CTk):
                 fecha_nac_bd, self.calcular_edad(),
                 float(self.entry_altura.get() or 0), float(self.entry_peso.get() or 0),
                 self.combo_sangre.get(), self.combo_plan.get(), fecha_ins_bd, fecha_ven_bd,
+                self.combo_pago.get(), # Nuevo dato
                 self.var_columna.get(), limpiar_texto_ayuda(self.txt_columna),
                 self.var_cardiaco.get(), limpiar_texto_ayuda(self.txt_cardiaco),
                 self.var_lesion.get(), limpiar_texto_ayuda(self.txt_lesion),
@@ -201,17 +200,15 @@ class RegistroClientes(ctk.CTk):
                 cursor.execute('''INSERT INTO clientes (
                     nombre, apellido, domicilio, telefono, fecha_nacimiento, edad, 
                     altura, peso, grupo_sanguineo, plan_seleccionado, fecha_inscripcion, fecha_vencimiento,
-                    patologia_columna, detalle_columna, enfermedades_cardiacas, detalle_cardiaco,
+                    pago, patologia_columna, detalle_columna, enfermedades_cardiacas, detalle_cardiaco,
                     lesiones, detalle_lesion, deportes, detalle_deporte, mareos, dolor_cabeza,
                     desmayos, hemorragias_nasales, dolores_articulares, alteracion,
                     problemas_rodilla_tobillo, convulsiones
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', datos)
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', datos)
                 conexion.commit()
             
             messagebox.showinfo("Éxito", f"Cliente registrado. Vence el: {fecha_ven_obj.strftime('%d-%m-%Y')}")
             self.limpiar_formulario()
-        except ValueError as e:
-            messagebox.showerror("Error de Formato", f"Asegúrese de usar el formato DD-MM-AAAA en las fechas.\n{e}")
         except Exception as e:
             messagebox.showerror("Error", f"Ocurrió un error: {e}")
 
@@ -222,6 +219,7 @@ class RegistroClientes(ctk.CTk):
         self.entry_fecha_ins.insert(0, datetime.now().strftime("%d-%m-%Y"))
         self.label_edad.configure(text="Edad: --")
         self.combo_plan.set("Seleccione un plan...")
+        self.combo_pago.set("Pendiente")
         vars_to_reset = [self.var_columna, self.var_cardiaco, self.var_lesion, self.var_deporte, self.var_mareos, self.var_cabeza, self.var_desmayos, self.var_nasal, self.var_articular, self.var_alteracion, self.var_rodilla, self.var_convulsion]
         for v in vars_to_reset: v.set(0)
         for t in [self.txt_columna, self.txt_cardiaco, self.txt_lesion, self.txt_deporte]:

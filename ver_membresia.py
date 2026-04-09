@@ -9,7 +9,6 @@ class VerMembresia(ctk.CTkFrame):
         self.id_cliente = id_cliente
         self.callback_volver = callback_volver
         
-        # Cabecera con botón volver
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", pady=(0, 20))
         ctk.CTkButton(header, text="← Volver", width=80, command=self.callback_volver).pack(side="left")
@@ -20,12 +19,11 @@ class VerMembresia(ctk.CTkFrame):
         self.cargar_datos_membresia()
 
     def formatear_fecha_gui(self, fecha_db):
-        """Convierte YYYY-MM-DD (DB) a DD-MM-YYYY (Visual)"""
         if not fecha_db: return "S/D"
         try:
             return datetime.strptime(fecha_db, "%Y-%m-%d").strftime("%d-%m-%Y")
         except:
-            return fecha_db # Si ya está en formato correcto o hay error
+            return fecha_db
 
     def obtener_datos(self):
         try:
@@ -34,7 +32,7 @@ class VerMembresia(ctk.CTkFrame):
                 cursor = conn.cursor()
                 query = """
                     SELECT c.nombre, c.apellido, c.fecha_inscripcion, c.fecha_vencimiento, 
-                           c.plan_seleccionado, p.dias, p.precio
+                           c.plan_seleccionado, c.pago, p.dias, p.precio
                     FROM clientes c
                     LEFT JOIN planes p ON c.plan_seleccionado = p.nombre_plan
                     WHERE c.id = ?
@@ -51,18 +49,30 @@ class VerMembresia(ctk.CTkFrame):
         m = self.obtener_datos()
         if not m: return
 
-        # Título: Nombre y Apellido
         ctk.CTkLabel(self.scroll_frame, text=f"{m['nombre']} {m['apellido']}", 
                      font=("Arial", 28, "bold"), text_color="#FFCC00").pack(pady=20)
         
         card = ctk.CTkFrame(self.scroll_frame, fg_color="#2b2b2b", corner_radius=15)
         card.pack(pady=10, padx=50, fill="x")
 
-        # Mostramos fechas en formato DD-MM-AAAA
+        # --- LÓGICA DE COLORES PARA EL PAGO ---
+        estado_pago = m['pago'] if m['pago'] else "Pendiente"
+        
+        # Pendiente = Amarillo (#FFCC00)
+        # Realizado = Verde (#2ecc71)
+        # No Pago = Rojo (#e74c3c)
+        if estado_pago == "Realizado":
+            color_pago = "#2ecc71"
+        elif estado_pago == "Pendiente":
+            color_pago = "#FFCC00"
+        else: # "No Pago" u otros
+            color_pago = "#e74c3c"
+
         fecha_ins_bonita = self.formatear_fecha_gui(m['fecha_inscripcion'])
         fecha_ven_bonita = self.formatear_fecha_gui(m['fecha_vencimiento'])
 
         self.crear_item_dato(card, "Plan Actual:", m['plan_seleccionado'])
+        self.crear_item_dato(card, "Estado de Pago:", estado_pago, color_personalizado=color_pago)
         self.crear_item_dato(card, "Fecha de Inscripción:", fecha_ins_bonita)
         self.crear_item_dato(card, "Fecha de Vencimiento:", fecha_ven_bonita, destacado=True)
         self.crear_item_dato(card, "Duración del Plan:", f"{m['dias']} días")
@@ -73,12 +83,17 @@ class VerMembresia(ctk.CTkFrame):
                      font=("Arial", 16, "bold"),
                      command=lambda: self.abrir_modal_renovacion(m)).pack(pady=40)
 
-    def crear_item_dato(self, parent, label, valor, destacado=False):
+    def crear_item_dato(self, parent, label, valor, destacado=False, color_personalizado=None):
         f = ctk.CTkFrame(parent, fg_color="transparent")
         f.pack(fill="x", padx=30, pady=10)
-        color_val = "#e74c3c" if destacado else "white" 
+        
+        if color_personalizado:
+            color_val = color_personalizado
+        else:
+            color_val = "#e74c3c" if destacado else "white" 
+            
         ctk.CTkLabel(f, text=label, font=("Arial", 14, "bold"), width=200, anchor="w").pack(side="left")
-        ctk.CTkLabel(f, text=valor, font=("Arial", 14), text_color=color_val).pack(side="left", padx=10)
+        ctk.CTkLabel(f, text=str(valor), font=("Arial", 14), text_color=color_val).pack(side="left", padx=10)
 
     def obtener_lista_planes(self):
         planes = []
@@ -93,7 +108,7 @@ class VerMembresia(ctk.CTkFrame):
     def abrir_modal_renovacion(self, datos_actuales):
         modal = ctk.CTkToplevel(self)
         modal.title("Renovación de Membresía")
-        modal.geometry("500x600")
+        modal.geometry("500x650")
         modal.grab_set()
         modal.attributes("-topmost", True)
 
@@ -104,17 +119,22 @@ class VerMembresia(ctk.CTkFrame):
         combo_plan.set(datos_actuales['plan_seleccionado'])
         combo_plan.pack(pady=5)
 
+        # Se agrega "No Pago" a las opciones del menú
+        ctk.CTkLabel(modal, text="Estado del Pago:").pack(pady=(10,0))
+        combo_pago = ctk.CTkOptionMenu(modal, values=["Pendiente", "Realizado", "No Pago"], width=250)
+        combo_pago.set(datos_actuales['pago'] if datos_actuales['pago'] else "Pendiente")
+        combo_pago.pack(pady=5)
+
         ctk.CTkLabel(modal, text="Nueva Fecha de Inscripción (DD-MM-AAAA):").pack(pady=(10,0))
         ent_fecha = ctk.CTkEntry(modal, width=250)
-        # Por defecto ponemos la fecha de hoy en el formato pedido
         ent_fecha.insert(0, datetime.now().strftime("%d-%m-%Y"))
         ent_fecha.pack(pady=5)
 
         def procesar_actualizacion():
             try:
                 nuevo_plan = combo_plan.get()
+                nuevo_estado_pago = combo_pago.get()
                 fecha_inicio_str = ent_fecha.get()
-                # Validamos el formato DD-MM-AAAA ingresado por el usuario
                 fecha_inicio_obj = datetime.strptime(fecha_inicio_str, "%d-%m-%Y")
 
                 with sqlite3.connect("gimnasio.db") as conn:
@@ -123,29 +143,29 @@ class VerMembresia(ctk.CTkFrame):
                     resultado = cursor.fetchone()
                     
                     if not resultado:
-                        messagebox.showerror("Error", "El plan seleccionado no existe en la base de datos.")
+                        messagebox.showerror("Error", "El plan seleccionado no existe.")
                         return
                     
                     dias = resultado[0]
                     nueva_fecha_ven = fecha_inicio_obj + timedelta(days=dias)
                     
-                    # Guardamos en la BD en formato ISO (YYYY-MM-DD) para que las consultas de SQL funcionen
                     cursor.execute("""
                         UPDATE clientes 
                         SET plan_seleccionado = ?, 
                             fecha_inscripcion = ?, 
-                            fecha_vencimiento = ? 
+                            fecha_vencimiento = ?,
+                            pago = ?
                         WHERE id = ?
                     """, (nuevo_plan, fecha_inicio_obj.strftime("%Y-%m-%d"), 
-                          nueva_fecha_ven.strftime("%Y-%m-%d"), self.id_cliente))
+                          nueva_fecha_ven.strftime("%Y-%m-%d"), nuevo_estado_pago, self.id_cliente))
                     conn.commit()
 
-                messagebox.showinfo("Éxito", f"Membresía renovada.\nVencimiento: {nueva_fecha_ven.strftime('%d-%m-%Y')}")
+                messagebox.showinfo("Éxito", "Membresía actualizada correctamente.")
                 modal.destroy()
                 self.cargar_datos_membresia() 
             except ValueError:
                 messagebox.showerror("Error", "Formato de fecha incorrecto. Use DD-MM-AAAA")
             except Exception as e:
-                messagebox.showerror("Error", f"Ocurrió un error: {e}")
+                messagebox.showerror("Error", f"Error: {e}")
 
-        ctk.CTkButton(modal, text="CONFIRMAR RENOVACIÓN", fg_color="#2ecc71", height=40, command=procesar_actualizacion).pack(pady=30)
+        ctk.CTkButton(modal, text="CONFIRMAR ACTUALIZACIÓN", fg_color="#2ecc71", height=40, command=procesar_actualizacion).pack(pady=30)

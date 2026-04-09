@@ -10,13 +10,14 @@ class VentanaClientes(ctk.CTk):
         super().__init__()
 
         self.title("Sistema Gym - Gestión de Clientes")
-        self.geometry("1100x700")
+        self.geometry("1200x800") # Aumentado ligeramente para el nuevo filtro
         ctk.set_appearance_mode("dark")
 
         # Variables de paginación y datos
         self.pagina_actual = 1
         self.clientes_por_pagina = 10
-        self.datos_totales = []
+        self.datos_completos_db = [] # Almacena la carga total para filtrar en memoria
+        self.datos_totales = []      # Almacena los datos que se muestran (filtrados o no)
 
         # --- CABECERA Y BUSCADOR ---
         self.frame_top = ctk.CTkFrame(self, fg_color="transparent")
@@ -24,8 +25,21 @@ class VentanaClientes(ctk.CTk):
 
         ctk.CTkLabel(self.frame_top, text="LISTADO DE CLIENTES", font=("Arial", 24, "bold")).pack(side="left", padx=10)
 
-        self.entry_busqueda = ctk.CTkEntry(self.frame_top, placeholder_text="Buscar por nombre o apellido...", width=300)
-        self.entry_busqueda.pack(side="right", padx=10)
+        # --- CONTENEDOR DE FILTROS (Lado derecho) ---
+        self.frame_filtros = ctk.CTkFrame(self.frame_top, fg_color="transparent")
+        self.frame_filtros.pack(side="right")
+
+        # Select para buscar por Plan
+        ctk.CTkLabel(self.frame_filtros, text="Plan:", font=("Arial", 14)).pack(side="left", padx=5)
+        self.combo_filtro_plan = ctk.CTkOptionMenu(self.frame_filtros, 
+                                                   values=self.obtener_planes_db(),
+                                                   command=lambda v: self.buscar_cliente(),
+                                                   width=160)
+        self.combo_filtro_plan.pack(side="left", padx=10)
+        self.combo_filtro_plan.set("Todos")
+
+        self.entry_busqueda = ctk.CTkEntry(self.frame_filtros, placeholder_text="Buscar por nombre o apellido...", width=250)
+        self.entry_busqueda.pack(side="left", padx=10)
         self.entry_busqueda.bind("<KeyRelease>", self.buscar_cliente)
 
         # --- CONTENEDOR DE TABLA ---
@@ -35,7 +49,6 @@ class VentanaClientes(ctk.CTk):
         self.crear_tabla_visual()
 
         # --- PANEL DE ACCIONES (Botones debajo de la tabla) ---
-        # Nota: En Treeview las acciones se suelen manejar seleccionando la fila y pulsando un botón general
         self.frame_acciones = ctk.CTkFrame(self, fg_color="transparent")
         self.frame_acciones.pack(pady=10)
 
@@ -64,21 +77,48 @@ class VentanaClientes(ctk.CTk):
         # Carga inicial
         self.cargar_datos_db()
 
+    def obtener_planes_db(self):
+        """Busca los nombres de los planes en la base de datos para el OptionMenu"""
+        planes = ["Todos"]
+        try:
+            with sqlite3.connect("gimnasio.db") as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT nombre_plan FROM planes")
+                for fila in cursor.fetchall():
+                    planes.append(fila[0])
+        except:
+            pass
+        return planes
+
     def crear_tabla_visual(self):
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("Treeview", background="#2b2b2b", foreground="white", fieldbackground="#2b2b2b", rowheight=35, font=("Arial", 11))
-        style.configure("Treeview.Heading", font=("Arial", 12, "bold"), background="#333", foreground="white")
+        
+        # --- CAMBIO: FUENTE MÁS GRANDE ---
+        # Contenido de la tabla (font size 14) y altura de fila (rowheight 40)
+        style.configure("Treeview", 
+                        background="#2b2b2b", 
+                        foreground="white", 
+                        fieldbackground="#2b2b2b", 
+                        rowheight=40, 
+                        font=("Arial", 14)) 
+        
+        # Cabeceras de la tabla (font size 15)
+        style.configure("Treeview.Heading", 
+                        font=("Arial", 15, "bold"), 
+                        background="#333", 
+                        foreground="white")
+        
         style.map("Treeview", background=[('selected', '#1f538d')])
 
         self.tabla = ttk.Treeview(self.frame_tabla, columns=("Numero", "Nombre", "Apellido", "Plan", "ID_REAL"), show="headings")
         
-        self.tabla.heading("Numero", text="N°")
+        self.tabla.heading("Numero", text="Nro.")
         self.tabla.heading("Nombre", text="Nombre")
         self.tabla.heading("Apellido", text="Apellido")
         self.tabla.heading("Plan", text="Plan Seleccionado")
         
-        self.tabla.column("Numero", width=50, anchor="center")
+        self.tabla.column("Numero", width=60, anchor="center")
         self.tabla.column("Nombre", width=200, anchor="w")
         self.tabla.column("Apellido", width=200, anchor="w")
         self.tabla.column("Plan", width=250, anchor="center")
@@ -96,8 +136,8 @@ class VentanaClientes(ctk.CTk):
             with sqlite3.connect("gimnasio.db") as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT nombre, apellido, plan_seleccionado, id FROM clientes")
-                self.datos_totales = cursor.fetchall()
-            self.actualizar_tabla()
+                self.datos_completos_db = cursor.fetchall()
+            self.buscar_cliente() # Llama a buscar_cliente para inicializar la lista con los filtros
         except Exception as e:
             print(f"Error cargando datos: {e}")
 
@@ -121,18 +161,24 @@ class VentanaClientes(ctk.CTk):
         self.label_paginas.configure(text=f"Página {self.pagina_actual} de {total_paginas}")
 
     def buscar_cliente(self, event=None):
+        """Filtra los datos por nombre/apellido y por plan seleccionado"""
         termino = self.entry_busqueda.get().lower()
-        try:
-            with sqlite3.connect("gimnasio.db") as conn:
-                cursor = conn.cursor()
-                # Busca por nombre o apellido
-                cursor.execute("SELECT nombre, apellido, plan_seleccionado, id FROM clientes WHERE LOWER(nombre) LIKE ? OR LOWER(apellido) LIKE ?", 
-                               (f'%{termino}%', f'%{termino}%'))
-                self.datos_totales = cursor.fetchall()
-            self.pagina_actual = 1
-            self.actualizar_tabla()
-        except Exception as e:
-            print(f"Error en búsqueda: {e}")
+        plan_filtro = self.combo_filtro_plan.get()
+        
+        self.datos_totales = []
+        
+        for cli in self.datos_completos_db:
+            nombre_completo = f"{cli[0]} {cli[1]}".lower()
+            plan_cliente = str(cli[2])
+            
+            match_texto = termino in nombre_completo
+            match_plan = (plan_filtro == "Todos" or plan_filtro == plan_cliente)
+            
+            if match_texto and match_plan:
+                self.datos_totales.append(cli)
+                
+        self.pagina_actual = 1
+        self.actualizar_tabla()
 
     # --- LÓGICA DE NAVEGACIÓN ---
     def pagina_siguiente(self):
@@ -161,7 +207,7 @@ class VentanaClientes(ctk.CTk):
             
             # 1. Limpiamos todo el contenido actual de la ventana
             for widget in self.winfo_children():
-                widget.pack_forget() # O widget.destroy()
+                widget.pack_forget() 
                 
             # 2. Cargamos el frame de VerFicha en el MISMO lugar
             self.vista_ficha = VerFicha(self, id_cliente, callback_volver=self.regresar_a_lista)

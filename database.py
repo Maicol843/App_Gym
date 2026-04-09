@@ -6,7 +6,7 @@ def crear_base_de_datos():
     
     cursor.execute("PRAGMA journal_mode=WAL;")
 
-    # 1. TABLA DE CLIENTES
+    # 1. TABLA DE CLIENTES (Actualizada con columna 'pago')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS clientes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,6 +22,7 @@ def crear_base_de_datos():
             plan_seleccionado TEXT,
             fecha_inscripcion DATE,
             fecha_vencimiento DATE,
+            pago TEXT DEFAULT 'Pendiente',
             patologia_columna INTEGER DEFAULT 0,
             detalle_columna TEXT,
             enfermedades_cardiacas INTEGER DEFAULT 0,
@@ -41,7 +42,7 @@ def crear_base_de_datos():
         )
     ''')
 
-    # 2. TABLA DE PLANES (Actualizada con columna 'dias')
+    # 2. TABLA DE PLANES
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS planes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,11 +53,16 @@ def crear_base_de_datos():
     ''')
 
     # --- LÓGICA DE ACTUALIZACIÓN ---
-    # Intentamos agregar la columna 'dias' por si la tabla ya existe sin ella
+    # Intenta agregar la columna 'pago' a clientes si la tabla ya existía
+    try:
+        cursor.execute("ALTER TABLE clientes ADD COLUMN pago TEXT DEFAULT 'Pendiente'")
+    except sqlite3.OperationalError:
+        pass 
+
     try:
         cursor.execute("ALTER TABLE planes ADD COLUMN dias INTEGER DEFAULT 30")
     except sqlite3.OperationalError:
-        pass # La columna ya existe
+        pass
 
     conexion.commit()
     conexion.close()
