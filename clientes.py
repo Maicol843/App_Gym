@@ -2,6 +2,9 @@ import customtkinter as ctk
 from tkinter import ttk, messagebox
 import sqlite3
 
+from ver_ficha import VerFicha
+from ver_membresia import VerMembresia
+
 class VentanaClientes(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -152,16 +155,50 @@ class VentanaClientes(ctk.CTk):
         return self.tabla.item(item)['values']
 
     def ir_a_ficha(self):
-        datos = self.obtener_seleccion()
-        if datos:
-            # Aquí abrirás la ventana Ver Ficha pasando el ID (datos[4])
-            print(f"Abriendo ficha del cliente ID: {datos[4]}")
+        seleccion = self.obtener_seleccion()
+        if seleccion:
+            id_cliente = seleccion[4]
+            
+            # 1. Limpiamos todo el contenido actual de la ventana
+            for widget in self.winfo_children():
+                widget.pack_forget() # O widget.destroy()
+                
+            # 2. Cargamos el frame de VerFicha en el MISMO lugar
+            self.vista_ficha = VerFicha(self, id_cliente, callback_volver=self.regresar_a_lista)
+            self.vista_ficha.pack(fill="both", expand=True)
+
+    def regresar_a_lista(self):
+        # Destruye la vista de ficha y vuelve a mostrar los widgets de la tabla
+        self.vista_ficha.destroy()
+        self.frame_top.pack(pady=20, padx=20, fill="x")
+        self.frame_tabla.pack(pady=10, padx=20, fill="both", expand=True)
+        self.frame_acciones.pack(pady=10)
+        self.frame_paginacion.pack(pady=20)
+        self.cargar_datos_db() # Refresca por si hubo cambios
 
     def ir_a_membresia(self):
-        datos = self.obtener_seleccion()
-        if datos:
-            # Aquí abrirás la ventana Membresía
-            print(f"Abriendo membresía del cliente ID: {datos[4]}")
+        seleccion = self.obtener_seleccion()
+        if seleccion:
+            id_cliente = seleccion[4]
+            
+            # Ocultamos la tabla y buscador
+            self.frame_top.pack_forget()
+            self.frame_tabla.pack_forget()
+            self.frame_acciones.pack_forget()
+            self.frame_paginacion.pack_forget()
+            
+            # Mostramos la vista de membresía
+            self.vista_membresia = VerMembresia(self, id_cliente, callback_volver=self.regresar_a_lista_desde_membresia)
+            self.vista_membresia.pack(fill="both", expand=True)
+
+    def regresar_a_lista_desde_membresia(self):
+        self.vista_membresia.destroy()
+        # Volvemos a mostrar todo lo anterior
+        self.frame_top.pack(pady=20, padx=20, fill="x")
+        self.frame_tabla.pack(pady=10, padx=20, fill="both", expand=True)
+        self.frame_acciones.pack(pady=10)
+        self.frame_paginacion.pack(pady=20)
+        self.cargar_datos_db()
 
     def ir_a_rutinas(self):
         datos = self.obtener_seleccion()
