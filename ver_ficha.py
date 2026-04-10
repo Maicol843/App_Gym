@@ -47,7 +47,7 @@ class VerFicha(ctk.CTkFrame):
         col1.grid(row=0, column=0, padx=10, sticky="nsew")
         self.crear_bloque_info(col1, "DATOS PERSONALES", [
             ("Nombre", c['nombre']), ("Apellido", c['apellido']), ("Domicilio", c['domicilio']), 
-            ("Teléfono", c['telefono']), ("Fecha Nac.", c['fecha_nacimiento']), ("Edad", f"{c['edad']} años")
+            ("Teléfono", c['telefono']), ("Fecha de Nacimiento", c['fecha_nacimiento']), ("Edad", f"{c['edad']} años")
         ])
         self.crear_bloque_info(col1, "ESTADO FÍSICO", [
             ("Altura", f"{c['altura']} cm"), ("Peso", f"{c['peso']} kg"), ("Grupo Sanguíneo", c['grupo_sanguineo'])
@@ -57,13 +57,16 @@ class VerFicha(ctk.CTkFrame):
         col2 = ctk.CTkFrame(contenedor_columnas, fg_color="#2b2b2b")
         col2.grid(row=0, column=1, padx=10, sticky="nsew")
         self.crear_bloque_info(col2, "HISTORIAL MÉDICO", [
-            ("Pat. Columna", f"{self.si_no_text(c['patologia_columna'])} - {c['detalle_columna']}"),
-            ("Enf. Cardíaca", f"{self.si_no_text(c['enfermedades_cardiacas'])} - {c['detalle_cardiaco']}"),
-            ("Lesiones", f"{self.si_no_text(c['lesiones'])} - {c['detalle_lesion']}")
+            ("Patología de Columna", f"{self.si_no_text(c['patologia_columna'])} - {c['detalle_columna']}"),
+            ("Enfermedades Cardíacas", f"{self.si_no_text(c['enfermedades_cardiacas'])} - {c['detalle_cardiaco']}"),
+            ("Lesiones", f"{self.si_no_text(c['lesiones'])} - {c['detalle_lesion']}"),
+            ("Practica otros deportes", f"{self.si_no_text(c['deportes'])} - {c['detalle_deporte']}")
         ])
-        self.crear_bloque_info(col2, "SÍNTOMAS", [
-            ("Mareos", self.si_no_text(c['mareos'])), ("Desmayos", self.si_no_text(c['desmayos'])),
-            ("Convulsiones", self.si_no_text(c['convulsiones'])), ("Tobillo/Rodilla", self.si_no_text(c['problemas_rodilla_tobillo']))
+        self.crear_bloque_info(col2, "OTROS SÍNTOMAS", [
+            ("¿Sufre mareos?", self.si_no_text(c['mareos'])), ("¿Ha sufrido desmayos?", self.si_no_text(c['desmayos'])),
+            ("¿Tiene dolor de cabeza con frecuencia?", self.si_no_text(c['dolor_cabeza'])), ("¿Sufre hemorragias nasales?", self.si_no_text(c['hemorragias_nasales'])),
+            ("¿Tiene dolores en las articulaciones?", self.si_no_text(c['dolores_articulares'])), ("¿Presenta pie plano, cabo o alguna otra alteración?", self.si_no_text(c['alteracion'])),
+            ("¿Ha sufrido convulsiones?", self.si_no_text(c['convulsiones'])), ("¿Presenta problemas de tobillo y/o rodilla?", self.si_no_text(c['problemas_rodilla_tobillo']))
         ])
 
         # BOTONES

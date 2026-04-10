@@ -84,8 +84,8 @@ class RegistroClientes(ctk.CTk):
         self.seccion_titulo("Ficha Médica")
         self.frame_medico = ctk.CTkFrame(self.scroll_frame, fg_color="transparent")
         self.frame_medico.pack(pady=10, padx=10)
-        self.var_columna, self.txt_columna = self.crear_pregunta_grid(self.frame_medico, "¿Patología columna?", 0, 0)
-        self.var_cardiaco, self.txt_cardiaco = self.crear_pregunta_grid(self.frame_medico, "¿Enf. cardíacas?", 0, 1)
+        self.var_columna, self.txt_columna = self.crear_pregunta_grid(self.frame_medico, "¿Patología en columna?", 0, 0)
+        self.var_cardiaco, self.txt_cardiaco = self.crear_pregunta_grid(self.frame_medico, "¿Enfermedades cardíacas?", 0, 1)
         self.var_lesion, self.txt_lesion = self.crear_pregunta_grid(self.frame_medico, "¿Posee lesiones?", 1, 0)
         self.var_deporte, self.txt_deporte = self.crear_pregunta_grid(self.frame_medico, "¿Practica deportes?", 1, 1)
 
@@ -95,10 +95,10 @@ class RegistroClientes(ctk.CTk):
         self.frame_switches.pack(pady=10)
 
         sw_list = [
-            ("¿Sufre mareos?", "var_mareos"), ("¿Dolor de cabeza?", "var_cabeza"),
-            ("¿Desmayos?", "var_desmayos"), ("¿Hemorragias?", "var_nasal"),
-            ("¿Dolores articulares?", "var_articular"), ("¿Otra alteración?", "var_alteracion"),
-            ("¿Rodilla/Tobillo?", "var_rodilla"), ("¿Convulsiones?", "var_convulsion")
+            ("¿Sufre mareos?", "var_mareos"), ("¿Tienes dolor de cabeza con frecuencia?", "var_cabeza"),
+            ("¿Ha sufrido desmayos?", "var_desmayos"), ("¿Sufre hemorragias nasales?", "var_nasal"),
+            ("¿Tienes dolores en las articulaciones?", "var_articular"), ("¿Presenta pie plano, cabo u otra alteración?", "var_alteracion"),
+            ("¿Presenta problemas de rodillas y/o tobillos?", "var_rodilla"), ("¿Ha sufrido convulsiones?", "var_convulsion")
         ]
         
         for i, (texto, var_name) in enumerate(sw_list):
