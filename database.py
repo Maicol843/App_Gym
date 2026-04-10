@@ -64,6 +64,22 @@ def crear_base_de_datos():
         )
     ''')
 
+    # 4. TABLA DE RUTINAS (Asegúrate que esté así en database.py)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS rutinas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_cliente INTEGER NOT NULL, 
+            nombre_rutina TEXT NOT NULL,
+            ejercicio TEXT NOT NULL,
+            series INTEGER NOT NULL,
+            repeticiones INTEGER NOT NULL,
+            grupo_muscular TEXT NOT NULL,
+            dias TEXT NOT NULL,
+            imagen_path TEXT,
+            FOREIGN KEY (id_cliente) REFERENCES clientes(id)
+        )
+    ''')
+
     # --- LÓGICA DE ACTUALIZACIÓN ---
     # Intenta agregar la columna 'pago' a clientes si la tabla ya existía
     try:
@@ -74,6 +90,13 @@ def crear_base_de_datos():
     try:
         cursor.execute("ALTER TABLE planes ADD COLUMN dias INTEGER DEFAULT 30")
     except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE rutinas ADD COLUMN id_cliente INTEGER NOT NULL DEFAULT 0")
+        print("Columna id_cliente agregada con éxito")
+    except sqlite3.OperationalError:
+        # Si ya existe, no hará nada
         pass
 
     conexion.commit()

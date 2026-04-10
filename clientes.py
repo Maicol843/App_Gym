@@ -247,11 +247,48 @@ class VentanaClientes(ctk.CTk):
         self.cargar_datos_db()
 
     def ir_a_rutinas(self):
-        datos = self.obtener_seleccion()
-        if datos:
-            # Aquí abrirás la ventana Rutinas
-            print(f"Abriendo rutinas del cliente ID: {datos[4]}")
+        # 1. Obtenemos el cliente seleccionado de la tabla
+        seleccion = self.obtener_seleccion()
+        
+        if seleccion:
+            # 2. Extraemos el ID (el índice 4 es donde está el ID oculto en tu tabla)
+            id_cliente_seleccionado = seleccion[4]
+            
+            # 3. Ocultamos los componentes del listado
+            self.frame_top.pack_forget()
+            self.frame_tabla.pack_forget()
+            self.frame_acciones.pack_forget()
+            self.frame_paginacion.pack_forget()
+            
+            # Importación local para evitar errores circulares
+            from ver_rutinas import VerRutinas
+            
+            # 4. Creamos el contenedor
+            self.frame_rutinas_container = ctk.CTkFrame(self, fg_color="transparent")
+            self.frame_rutinas_container.pack(fill="both", expand=True)
+            
+            header = ctk.CTkFrame(self.frame_rutinas_container, fg_color="transparent")
+            header.pack(fill="x", padx=20, pady=10)
+            ctk.CTkButton(header, text="← VOLVER AL LISTADO", width=150, 
+                          command=self.regresar_de_rutinas).pack(side="left")
 
+            # --- LA SOLUCIÓN ESTÁ AQUÍ ---
+            # Ahora le pasamos el ID que extrajimos arriba
+            self.vista_rutinas = VerRutinas(self.frame_rutinas_container, id_cliente=id_cliente_seleccionado)
+            self.vista_rutinas.pack(fill="both", expand=True)
+        else:
+            messagebox.showwarning("Atención", "Por favor, seleccione un cliente de la tabla primero.")
+        
+    def regresar_de_rutinas(self):
+        if hasattr(self, 'frame_rutinas_container'):
+            self.frame_rutinas_container.destroy()
+            
+        # Volvemos a mostrar la lista original
+        self.frame_top.pack(pady=20, padx=20, fill="x")
+        self.frame_tabla.pack(pady=10, padx=20, fill="both", expand=True)
+        self.frame_acciones.pack(pady=10)
+        self.frame_paginacion.pack(pady=20)
+        self.cargar_datos_db()
 if __name__ == "__main__":
     app = VentanaClientes()
     app.mainloop()
