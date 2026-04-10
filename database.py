@@ -52,6 +52,18 @@ def crear_base_de_datos():
         )
     ''')
 
+    # 3. TABLA DE EGRESOS
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS egresos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fecha DATE NOT NULL,
+            detalle TEXT NOT NULL,
+            cantidad INTEGER NOT NULL,
+            p_unit REAL NOT NULL,
+            importe REAL NOT NULL
+        )
+    ''')
+
     # --- LÓGICA DE ACTUALIZACIÓN ---
     # Intenta agregar la columna 'pago' a clientes si la tabla ya existía
     try:
