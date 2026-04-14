@@ -1,7 +1,8 @@
 import customtkinter as ctk
 import sqlite3
 from database import crear_base_de_datos
-
+import os
+import sys
 # Importación de los módulos (Paneles)
 from gestion_gimnasio import GestionGimnasio
 from registro_clientes import RegistroClientes
@@ -18,6 +19,19 @@ class AplicacionPrincipal(ctk.CTk):
         self.title("SISTEMA DE GESTIÓN DE GIMNASIO")
         self.geometry("1300x850")
         ctk.set_appearance_mode("dark")
+
+        # Ruta dinámica para el icono
+        if hasattr(sys, '_MEIPASS'):
+            # Si el programa está ejecutándose como .exe
+            ruta_icono = os.path.join(sys._MEIPASS, "img/logo.ico")
+        else:
+            # Si lo corres desde Python normal
+            ruta_icono = os.path.join("img", "logo.ico")
+
+        try:
+            self.iconbitmap(ruta_icono)
+        except Exception as e:
+            print(f"No se pudo cargar el icono: {e}")
 
         # Inicializar base de datos
         crear_base_de_datos()

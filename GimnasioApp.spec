@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('img_rutinas', 'img_rutinas')]
+datas = [('img/logo.ico', 'img'), ('img_rutinas', 'img_rutinas')]
 binaries = []
 hiddenimports = []
 tmp_ret = collect_all('customtkinter')
@@ -39,6 +39,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['img\\logo.ico'],
 )
 coll = COLLECT(
     exe,
