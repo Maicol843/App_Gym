@@ -18,7 +18,7 @@ class VentanaIngresos(ctk.CTkFrame):
         # --- CABECERA (Botón eliminado) ---
         self.frame_top = ctk.CTkFrame(self, fg_color="transparent")
         self.frame_top.pack(pady=(20, 10), padx=20, fill="x")
-        ctk.CTkLabel(self.frame_top, text="REPORTE DE INGRESOS", font=("Arial", 28, "bold")).pack(side="left")
+        ctk.CTkLabel(self.frame_top, text="INGRESOS", font=("Arial", 28, "bold")).pack(side="left")
 
         # --- PANEL DE FILTROS ---
         self.frame_filtros = ctk.CTkFrame(self, fg_color="transparent")
@@ -44,7 +44,7 @@ class VentanaIngresos(ctk.CTkFrame):
         # --- RESUMEN TOTAL ---
         self.frame_total = ctk.CTkFrame(self, fg_color="#1a1a1a", height=50)
         self.frame_total.pack(pady=5, padx=20, fill="x")
-        self.label_total_dinero = ctk.CTkLabel(self.frame_total, text="TOTAL INGRESOS: $0.00", font=("Arial", 18, "bold"), text_color="#2ecc71")
+        self.label_total_dinero = ctk.CTkLabel(self.frame_total, text="Total Ingresos: $0.00", font=("Arial", 18, "bold"), text_color="#2ecc71")
         self.label_total_dinero.pack(side="right", padx=20, pady=10)
 
         # --- PAGINACIÓN ---

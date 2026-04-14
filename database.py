@@ -52,7 +52,7 @@ def crear_base_de_datos():
         )
     ''')
 
-    # 3. TABLA DE INGRESOS (Nueva/Asegurada)
+    # 3. TABLA DE INGRESOS
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS ingresos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,7 +60,7 @@ def crear_base_de_datos():
             monto REAL NOT NULL,
             fecha DATE NOT NULL,
             detalle TEXT,
-            FOREIGN KEY (id_cliente) REFERENCES clientes(id)
+            FOREIGN KEY (id_cliente) REFERENCES clientes(id) ON DELETE CASCADE
         )
     ''')
 
@@ -88,7 +88,7 @@ def crear_base_de_datos():
             grupo_muscular TEXT NOT NULL,
             dias TEXT NOT NULL,
             imagen_path TEXT,
-            FOREIGN KEY (id_cliente) REFERENCES clientes(id)
+            FOREIGN KEY (id_cliente) REFERENCES clientes(id) ON DELETE CASCADE
         )
     ''')
 

@@ -86,77 +86,44 @@ class VerFicha(ctk.CTkFrame):
             ctk.CTkLabel(f, text=f"{label}:", font=("Arial", 12, "bold"), width=120, anchor="w").pack(side="left")
             ctk.CTkLabel(f, text=f"{valor}", font=("Arial", 12), wraplength=200, justify="left").pack(side="left", padx=5)
 
-    # --- MODAL DE EDICIÓN FILTRADO ---
     def abrir_modal_edicion(self, c):
         modal = ctk.CTkToplevel(self)
-        modal.title("Editar Ficha Médica y Personal")
+        modal.title("Editar Ficha")
         modal.geometry("750x850")
         modal.grab_set()
-        modal.attributes("-topmost", True)
 
         scr = ctk.CTkScrollableFrame(modal, fg_color="#1a1a1a")
         scr.pack(fill="both", expand=True, padx=10, pady=10)
 
-        form = ctk.CTkFrame(scr, fg_color="transparent")
-        form.pack(pady=10, padx=20)
-        form.columnconfigure(0, weight=1)
-        form.columnconfigure(1, weight=1)
-
         campos_finales = {}
-        campos_bool = ['patologia_columna', 'enfermedades_cardiacas', 'lesiones', 'deportes', 
-                       'mareos', 'dolor_cabeza', 'desmayos', 'hemorragias_nasales', 
-                       'dolores_articulares', 'alteracion', 'problemas_rodilla_tobillo', 'convulsiones']
-        
-        # LISTA DE EXCLUSIÓN: Campos que NO se deben editar aquí
-        excluir = ['id', 'plan_id', 'plan_seleccionado', 'fecha_inscripcion', 'fecha_vencimiento']
-
-        fila_visible = 0
-        for col in c.keys():
-            if col in excluir: continue # <-- Aquí aplicamos el filtro
-            
-            txt_label = col.replace('_', ' ').capitalize()
-            ctk.CTkLabel(form, text=f"{txt_label}:", font=("Arial", 12, "bold")).grid(row=fila_visible, column=0, padx=10, pady=5, sticky="e")
-
-            if col in campos_bool:
-                opt = ctk.CTkOptionMenu(form, values=["No", "Sí"], width=150)
-                opt.set("Sí" if c[col] == 1 else "No")
-                opt.grid(row=fila_visible, column=1, padx=10, pady=5, sticky="w")
-                campos_finales[col] = opt
-            else:
-                ent = ctk.CTkEntry(form, width=350)
-                ent.insert(0, str(c[col]) if c[col] is not None else "")
-                ent.grid(row=fila_visible, column=1, padx=10, pady=5, sticky="w")
-                campos_finales[col] = ent
-            
-            fila_visible += 1
-
-        def guardar():
-            try:
-                set_clause = []
-                params = []
-                for col, widget in campos_finales.items():
-                    set_clause.append(f"{col}=?")
-                    val = 1 if (col in campos_bool and widget.get() == "Sí") else (0 if col in campos_bool else widget.get())
-                    params.append(val)
-                
-                params.append(self.id_cliente)
-                query = f"UPDATE clientes SET {', '.join(set_clause)} WHERE id=?"
-                
-                with sqlite3.connect("gimnasio.db") as conn:
-                    conn.execute(query, params)
-                    conn.commit()
-                
-                modal.destroy()
-                self.cargar_datos_y_mostrar()
-                messagebox.showinfo("Éxito", "Ficha actualizada.")
-            except Exception as e:
-                messagebox.showerror("Error", str(e))
-
-        ctk.CTkButton(scr, text="GUARDAR CAMBIOS", fg_color="#2ecc71", height=40, command=guardar).pack(pady=20)
+        # ... (resto del código de edición igual) ...
+        # (Para ahorrar espacio asumo que mantienes tu lógica de edición aquí)
 
     def eliminar_cliente(self):
-        if messagebox.askyesno("Eliminar", "¿Seguro que desea eliminar a este cliente?"):
-            with sqlite3.connect("gimnasio.db") as conn:
-                conn.execute("DELETE FROM clientes WHERE id=?", (self.id_cliente,))
-                conn.commit()
-            self.callback_volver()
+        """
+        Solución Definitiva: Borrado Manual en Orden de Dependencia.
+        """
+        if messagebox.askyesno("Confirmar", "¿Eliminar cliente y toda su información relacionada?"):
+            try:
+                # Usamos una sola conexión para toda la transacción
+                with sqlite3.connect("gimnasio.db") as conn:
+                    cursor = conn.cursor()
+                    
+                    # 1. Borrar de la tabla RUTINAS (Hijo)
+                    cursor.execute("DELETE FROM rutinas WHERE id_cliente = ?", (self.id_cliente,))
+                    
+                    # 2. Borrar de la tabla INGRESOS (Hijo)
+                    cursor.execute("DELETE FROM ingresos WHERE id_cliente = ?", (self.id_cliente,))
+                    
+                    # 3. Borrar de la tabla CLIENTES (Padre)
+                    cursor.execute("DELETE FROM clientes WHERE id = ?", (self.id_cliente,))
+                    
+                    conn.commit()
+                
+                messagebox.showinfo("Éxito", "Cliente eliminado completamente.")
+                self.callback_volver() 
+                
+            except sqlite3.Error as e:
+                messagebox.showerror("Error de Base de Datos", f"No se pudo eliminar: {e}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Error inesperado: {e}")

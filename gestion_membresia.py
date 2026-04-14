@@ -16,7 +16,7 @@ class GestionMembresia(ctk.CTkFrame):
         # --- CABECERA ---
         self.frame_top = ctk.CTkFrame(self, fg_color="transparent")
         self.frame_top.pack(pady=(20, 10), padx=20, fill="x")
-        ctk.CTkLabel(self.frame_top, text="CONTROL DE MEMBRESÍAS", font=("Arial", 28, "bold")).pack(side="left")
+        ctk.CTkLabel(self.frame_top, text="MEMBRESIAS", font=("Arial", 28, "bold")).pack(side="left")
 
         # --- PANEL DE FILTROS ---
         self.frame_filtros = ctk.CTkFrame(self, fg_color="transparent")

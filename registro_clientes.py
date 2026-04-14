@@ -3,16 +3,17 @@ from tkinter import messagebox
 import sqlite3
 from datetime import datetime, timedelta
 
-class RegistroClientes(ctk.CTk):
-    def __init__(self):
-        super().__init__()
+# Se cambia la herencia de ctk.CTk a ctk.CTkFrame para que sea integrable
+class RegistroClientes(ctk.CTkFrame):
+    def __init__(self, parent):
+        # Se inicializa como Frame pasando el padre (container)
+        super().__init__(parent, fg_color="transparent")
 
-        self.title("Sistema Gym - Registro de Clientes")
-        self.geometry("850x850")
-        ctk.set_appearance_mode("dark")
-
-        self.scroll_frame = ctk.CTkScrollableFrame(self, width=800, height=800)
-        self.scroll_frame.pack(pady=20, padx=20, fill="both", expand=True)
+        # Eliminamos configuración de ventana (title, geometry) ya que ahora es un panel
+        
+        # ScrollableFrame ahora tiene a 'self' (este Frame) como padre
+        self.scroll_frame = ctk.CTkScrollableFrame(self, fg_color="transparent")
+        self.scroll_frame.pack(pady=10, padx=10, fill="both", expand=True)
 
         self.crear_widgets()
 
@@ -107,7 +108,7 @@ class RegistroClientes(ctk.CTk):
             sw = ctk.CTkSwitch(self.frame_switches, text=texto, variable=var)
             sw.grid(row=i//2, column=i%2, padx=30, pady=5, sticky="w")
 
-        self.btn_registrar = ctk.CTkButton(self.scroll_frame, text="REGISTRAR E INSCRIBIR", 
+        self.btn_registrar = ctk.CTkButton(self.scroll_frame, text="Registrar", 
                                            width=400, height=50, font=("Arial", 16, "bold"),
                                            fg_color="#2ecc71", hover_color="#27ae60", command=self.guardar_datos)
         self.btn_registrar.pack(pady=40)
@@ -184,7 +185,7 @@ class RegistroClientes(ctk.CTk):
                 fecha_nac_bd, self.calcular_edad(),
                 float(self.entry_altura.get() or 0), float(self.entry_peso.get() or 0),
                 self.combo_sangre.get(), self.combo_plan.get(), fecha_ins_bd, fecha_ven_bd,
-                self.combo_pago.get(), # Nuevo dato
+                self.combo_pago.get(), 
                 self.var_columna.get(), limpiar_texto_ayuda(self.txt_columna),
                 self.var_cardiaco.get(), limpiar_texto_ayuda(self.txt_cardiaco),
                 self.var_lesion.get(), limpiar_texto_ayuda(self.txt_lesion),
@@ -225,8 +226,13 @@ class RegistroClientes(ctk.CTk):
         for t in [self.txt_columna, self.txt_cardiaco, self.txt_lesion, self.txt_deporte]:
             t.delete("1.0", "end")
             t.insert("1.0", "Especifique aquí...")
+        # Volver al inicio del scroll
         self.scroll_frame._parent_canvas.yview_moveto(0)
 
+# El bloque if __name__ se mantiene solo para pruebas rápidas
 if __name__ == "__main__":
-    app = RegistroClientes()
-    app.mainloop()
+    root = ctk.CTk()
+    root.geometry("850x850")
+    app = RegistroClientes(root)
+    app.pack(fill="both", expand=True)
+    root.mainloop()

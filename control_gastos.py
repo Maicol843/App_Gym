@@ -15,183 +15,170 @@ class ControlGastos(ctk.CTkFrame):
         # --- CABECERA ---
         self.frame_top = ctk.CTkFrame(self, fg_color="transparent")
         self.frame_top.pack(pady=20, padx=20, fill="x")
-        ctk.CTkLabel(self.frame_top, text="CONTROL DE GASTOS", font=("Arial", 28, "bold")).pack(side="left")
+        ctk.CTkLabel(self.frame_top, text="GESTIÓN DE EGRESOS", font=("Arial", 28, "bold")).pack(side="left")
 
-        # --- BUSCADOR Y BOTÓN INGRESAR ---
+        # --- PANEL DE CONTROLES ---
         self.frame_controles = ctk.CTkFrame(self, fg_color="transparent")
         self.frame_controles.pack(pady=10, padx=20, fill="x")
 
-        self.entry_busqueda = ctk.CTkEntry(self.frame_controles, placeholder_text="Buscar por detalle...", width=300, font=("Arial", 14))
-        self.entry_busqueda.pack(side="left", padx=10)
+        self.entry_busqueda = ctk.CTkEntry(self.frame_controles, placeholder_text="Buscar por detalle...", width=250)
+        self.entry_busqueda.pack(side="left", padx=(0, 10))
         self.entry_busqueda.bind("<KeyRelease>", lambda e: self.cargar_datos_db())
 
-        self.btn_ingresar = ctk.CTkButton(self.frame_controles, text="+ INGRESAR GASTO", fg_color="#e67e22", 
-                                          font=("Arial", 14, "bold"), command=self.abrir_modal_ingreso)
-        self.btn_ingresar.pack(side="right", padx=10)
+        # Botones de Acción
+        self.btn_ingresar = ctk.CTkButton(self.frame_controles, text="+ AGREGAR", width=110, fg_color="#2ecc71", command=self.abrir_modal_ingreso)
+        self.btn_ingresar.pack(side="left", padx=5)
 
-        # --- TABLA ---
+        self.btn_editar = ctk.CTkButton(self.frame_controles, text="EDITAR", width=100, fg_color="#3498db", command=self.preparar_edicion)
+        self.btn_editar.pack(side="left", padx=5)
+
+        self.btn_eliminar = ctk.CTkButton(self.frame_controles, text="ELIMINAR", width=100, fg_color="#e74c3c", command=self.eliminar_gasto)
+        self.btn_eliminar.pack(side="left", padx=5)
+
+        self.btn_reset = ctk.CTkButton(self.frame_controles, text="RESTABLECER", width=120, fg_color="#95a5a6", command=self.restablecer_base_datos)
+        self.btn_reset.pack(side="left", padx=5)
+
+        # --- TABLA DE DATOS ---
         self.frame_tabla = ctk.CTkFrame(self)
         self.frame_tabla.pack(pady=10, padx=20, fill="both", expand=True)
-        self.crear_tabla()
+        self.crear_tabla_visual()
 
-        # --- RESUMEN TOTAL ---
-        self.frame_total = ctk.CTkFrame(self, fg_color="#1a1a1a", height=50)
-        self.frame_total.pack(pady=5, padx=20, fill="x")
-        self.label_total_egresos = ctk.CTkLabel(self.frame_total, text="TOTAL EGRESOS: $0.00", font=("Arial", 18, "bold"), text_color="#e74c3c")
-        self.label_total_egresos.pack(side="right", padx=20, pady=10)
-
-        # --- BOTONES DE ACCIÓN ---
-        self.frame_acciones = ctk.CTkFrame(self, fg_color="transparent")
-        self.frame_acciones.pack(pady=10)
-
-        ctk.CTkButton(self.frame_acciones, text="EDITAR", fg_color="#3498db", command=self.editar_gasto).grid(row=0, column=0, padx=10)
-        ctk.CTkButton(self.frame_acciones, text="ELIMINAR", fg_color="#e74c3c", command=self.eliminar_gasto).grid(row=0, column=1, padx=10)
-        ctk.CTkButton(self.frame_acciones, text="RESTABLECER TODO", fg_color="#555", command=self.restablecer_base_datos).grid(row=0, column=2, padx=10)
+        # --- RESUMEN (TOTAL DE EGRESOS) ---
+        self.frame_resumen = ctk.CTkFrame(self, fg_color="#1a1a1a", height=50)
+        self.frame_resumen.pack(pady=5, padx=20, fill="x")
+        
+        self.lbl_total_egresos = ctk.CTkLabel(self.frame_resumen, text="TOTAL EGRESOS: $ 0.00", 
+                                               font=("Arial", 18, "bold"), text_color="#e74c3c")
+        self.lbl_total_egresos.pack(side="right", padx=20, pady=10)
 
         # --- PAGINACIÓN ---
         self.frame_paginacion = ctk.CTkFrame(self, fg_color="transparent")
-        self.frame_paginacion.pack(pady=10)
+        self.frame_paginacion.pack(pady=15)
+
         self.btn_prev = ctk.CTkButton(self.frame_paginacion, text="Anterior", width=80, command=self.pagina_anterior)
         self.btn_prev.grid(row=0, column=0, padx=10)
-        self.label_paginas = ctk.CTkLabel(self.frame_paginacion, text="Página 1 de 1", font=("Arial", 14))
+
+        self.label_paginas = ctk.CTkLabel(self.frame_paginacion, text="Página 1 de 1")
         self.label_paginas.grid(row=0, column=1, padx=20)
+
         self.btn_next = ctk.CTkButton(self.frame_paginacion, text="Siguiente", width=80, command=self.pagina_siguiente)
         self.btn_next.grid(row=0, column=2, padx=10)
 
         self.cargar_datos_db()
 
-    def crear_tabla(self):
+    def crear_tabla_visual(self):
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("Treeview", background="#2b2b2b", foreground="white", fieldbackground="#2b2b2b", rowheight=40, font=("Arial", 14))
-        style.configure("Treeview.Heading", font=("Arial", 15, "bold"), background="#333", foreground="white")
+        style.configure("Treeview", background="#2b2b2b", foreground="white", fieldbackground="#2b2b2b", rowheight=35)
+        style.configure("Treeview.Heading", background="#333", foreground="white", font=("Arial", 12, "bold"))
         
-        self.tabla = ttk.Treeview(self.frame_tabla, columns=("Nro", "Fecha", "Detalle", "Cant", "P_Unit", "Egreso", "ID"), show="headings")
+        columnas = ("Nro", "Fecha", "Detalle", "Cant.", "P. Unit", "Importe", "ID")
+        self.tabla = ttk.Treeview(self.frame_tabla, columns=columnas, show="headings")
         
-        encabezados = [("Nro", 50), ("Fecha", 120), ("Detalle", 350), ("Cant", 80), ("P_Unit", 120), ("Egreso", 120)]
-        for col, ancho in encabezados:
-            self.tabla.heading(col, text=col if col != "P_Unit" else "P. Unit")
-            self.tabla.column(col, width=ancho, anchor="center")
-            
-        self.tabla.column("Detalle", anchor="w")
+        anchos = {"Nro": 50, "Fecha": 120, "Detalle": 300, "Cant.": 80, "P. Unit": 120, "Importe": 150, "ID": 0}
+        for col in columnas:
+            self.tabla.heading(col, text=col)
+            self.tabla.column(col, width=anchos[col], anchor="center")
+        
         self.tabla.column("ID", width=0, stretch=False)
-
         self.tabla.pack(side="left", fill="both", expand=True)
-        scrolly = ttk.Scrollbar(self.frame_tabla, orient="vertical", command=self.tabla.yview)
-        self.tabla.configure(yscroll=scrolly.set)
-        scrolly.pack(side="right", fill="y")
-
-    def abrir_modal_ingreso(self, editar_datos=None):
-        modal = ctk.CTkToplevel(self)
-        modal.title("Registro de Gasto")
-        modal.geometry("400x550")
-        modal.grab_set()
-
-        ctk.CTkLabel(modal, text="DETALLE DEL GASTO", font=("Arial", 18, "bold")).pack(pady=20)
-
-        entry_fecha = ctk.CTkEntry(modal, placeholder_text="DD-MM-YYYY", width=250)
-        entry_fecha.pack(pady=10)
-        entry_fecha.insert(0, datetime.now().strftime("%d-%m-%Y"))
-
-        entry_detalle = ctk.CTkEntry(modal, placeholder_text="Descripción", width=250)
-        entry_detalle.pack(pady=10)
-
-        entry_cantidad = ctk.CTkEntry(modal, placeholder_text="Cantidad (Entero)", width=250)
-        entry_cantidad.pack(pady=10)
-
-        entry_p_unit = ctk.CTkEntry(modal, placeholder_text="Precio Unitario ($)", width=250)
-        entry_p_unit.pack(pady=10)
-
-        if editar_datos:
-            # Índices de la tabla: 0:Nro, 1:Fecha, 2:Detalle, 3:Cant, 4:P_Unit, 5:Egreso, 6:ID
-            entry_fecha.delete(0, 'end')
-            entry_fecha.insert(0, editar_datos[1])
-            entry_detalle.insert(0, editar_datos[2])
-            entry_cantidad.insert(0, editar_datos[3])
-            # Limpiar precio para que float() sea posible
-            p_limpio = str(editar_datos[4]).replace("$", "").replace(",", "").strip()
-            entry_p_unit.insert(0, p_limpio)
-
-        def guardar():
-            try:
-                fecha_db = datetime.strptime(entry_fecha.get(), "%d-%m-%Y").strftime("%Y-%m-%d")
-                detalle = entry_detalle.get()
-                cantidad = int(entry_cantidad.get())
-                p_unit = float(entry_p_unit.get())
-                importe_total = cantidad * p_unit
-
-                if not detalle: raise ValueError
-
-                with sqlite3.connect("gimnasio.db") as conn:
-                    cursor = conn.cursor()
-                    if editar_datos:
-                        # El ID real está en el índice 6
-                        cursor.execute("""UPDATE egresos SET fecha=?, detalle=?, cantidad=?, p_unit=?, importe=? 
-                                          WHERE id=?""", (fecha_db, detalle, cantidad, p_unit, importe_total, editar_datos[6]))
-                    else:
-                        cursor.execute("""INSERT INTO egresos (fecha, detalle, cantidad, p_unit, importe) 
-                                          VALUES (?,?,?,?,?)""", (fecha_db, detalle, cantidad, p_unit, importe_total))
-                    conn.commit()
-                modal.destroy()
-                self.cargar_datos_db()
-            except ValueError:
-                messagebox.showerror("Error", "Datos inválidos. Verifique fecha (DD-MM-YYYY), cantidad y precio.")
-
-        btn_frame = ctk.CTkFrame(modal, fg_color="transparent")
-        btn_frame.pack(pady=20)
-        ctk.CTkButton(btn_frame, text="ACEPTAR", fg_color="#2ecc71", command=guardar).pack(side="left", padx=10)
-        ctk.CTkButton(btn_frame, text="CANCELAR", fg_color="#e74c3c", command=modal.destroy).pack(side="left", padx=10)
 
     def cargar_datos_db(self):
-        busqueda = self.entry_busqueda.get().lower()
+        termino = self.entry_busqueda.get()
         try:
             with sqlite3.connect("gimnasio.db") as conn:
                 cursor = conn.cursor()
-                query = "SELECT fecha, detalle, cantidad, p_unit, importe, id FROM egresos WHERE LOWER(detalle) LIKE ? ORDER BY fecha DESC"
-                cursor.execute(query, (f'%{busqueda}%',))
+                query = "SELECT fecha, detalle, cantidad, p_unit, importe, id FROM egresos WHERE detalle LIKE ? ORDER BY fecha DESC"
+                cursor.execute(query, (f'%{termino}%',))
                 self.datos_totales = cursor.fetchall()
             
-            # El importe total está en la posición 4 de la tupla (fecha, detalle, cant, p_unit, importe, id)
-            suma = sum(row[4] for row in self.datos_totales)
-            self.label_total_egresos.configure(text=f"TOTAL EGRESOS: ${suma:,.2f}")
+            # Calcular el total sumando la columna 'importe' (índice 4)
+            suma_total = sum(row[4] for row in self.datos_totales)
+            self.lbl_total_egresos.configure(text=f"TOTAL EGRESOS: $ {suma_total:,.2f}")
+            
             self.actualizar_tabla()
-        except Exception as e: print(f"Error DB: {e}")
+        except Exception as e:
+            print(f"Error: {e}")
 
     def actualizar_tabla(self):
         for item in self.tabla.get_children(): self.tabla.delete(item)
         inicio = (self.pagina_actual - 1) * self.registros_por_pagina
-        fin = inicio + self.registros_por_pagina
-        
-        for i, (fecha, detalle, cant, p_unit, importe, id_real) in enumerate(self.datos_totales[inicio:fin], start=inicio + 1):
-            f_vis = datetime.strptime(fecha, "%Y-%m-%d").strftime("%d-%m-%Y")
-            self.tabla.insert("", "end", values=(i, f_vis, detalle, cant, f"$ {p_unit:,.2f}", f"$ {importe:,.2f}", id_real))
+        datos_pagina = self.datos_totales[inicio:inicio + self.registros_por_pagina]
+
+        for i, row in enumerate(datos_pagina, start=inicio + 1):
+            f_vis = datetime.strptime(row[0], "%Y-%m-%d").strftime("%d-%m-%Y")
+            self.tabla.insert("", "end", values=(i, f_vis, row[1], row[2], f"${row[3]:,.2f}", f"${row[4]:,.2f}", row[5]))
 
         total_pag = max(1, (len(self.datos_totales) + self.registros_por_pagina - 1) // self.registros_por_pagina)
         self.label_paginas.configure(text=f"Página {self.pagina_actual} de {total_pag}")
 
-    def editar_gasto(self):
-        item = self.tabla.selection()
-        if not item: 
-            messagebox.showwarning("Atención", "Seleccione un registro para editar.")
-            return
-        self.abrir_modal_ingreso(editar_datos=self.tabla.item(item)['values'])
-
     def eliminar_gasto(self):
         item = self.tabla.selection()
-        if not item: return
+        if not item:
+            messagebox.showwarning("Atención", "Seleccione un registro.")
+            return
         datos = self.tabla.item(item)['values']
-        if messagebox.askyesno("Confirmar", f"¿Eliminar el gasto '{datos[2]}'?"):
+        if messagebox.askyesno("Confirmar", f"¿Eliminar '{datos[2]}'?"):
             with sqlite3.connect("gimnasio.db") as conn:
                 conn.cursor().execute("DELETE FROM egresos WHERE id=?", (datos[6],))
                 conn.commit()
             self.cargar_datos_db()
 
+    def preparar_edicion(self):
+        item = self.tabla.selection()
+        if not item:
+            messagebox.showwarning("Atención", "Seleccione un registro.")
+            return
+        self.abrir_modal_ingreso(editar_datos=self.tabla.item(item)['values'])
+
+    def abrir_modal_ingreso(self, editar_datos=None):
+        modal = ctk.CTkToplevel(self)
+        modal.title("Gasto")
+        modal.geometry("400x500")
+        modal.grab_set()
+
+        entry_det = ctk.CTkEntry(modal, placeholder_text="Detalle", width=300)
+        entry_det.pack(pady=15)
+        entry_cant = ctk.CTkEntry(modal, placeholder_text="Cantidad", width=300)
+        entry_cant.pack(pady=15)
+        entry_punit = ctk.CTkEntry(modal, placeholder_text="Precio Unitario", width=300)
+        entry_punit.pack(pady=15)
+
+        if editar_datos:
+            entry_det.insert(0, editar_datos[2])
+            entry_cant.insert(0, editar_datos[3])
+            p_limpio = str(editar_datos[4]).replace("$", "").replace(",", "")
+            entry_punit.insert(0, p_limpio)
+
+        def guardar():
+            try:
+                det = entry_det.get()
+                cant = int(entry_cant.get())
+                p_u = float(entry_punit.get())
+                imp = cant * p_u
+                fec = datetime.now().strftime("%Y-%m-%d")
+
+                with sqlite3.connect("gimnasio.db") as conn:
+                    cursor = conn.cursor()
+                    if editar_datos:
+                        cursor.execute("UPDATE egresos SET detalle=?, cantidad=?, p_unit=?, importe=? WHERE id=?",
+                                       (det, cant, p_u, imp, editar_datos[6]))
+                    else:
+                        cursor.execute("INSERT INTO egresos (fecha, detalle, cantidad, p_unit, importe) VALUES (?,?,?,?,?)",
+                                       (fec, det, cant, p_u, imp))
+                    conn.commit()
+                self.cargar_datos_db()
+                modal.destroy()
+            except:
+                messagebox.showerror("Error", "Datos inválidos.")
+
+        ctk.CTkButton(modal, text="GUARDAR", command=guardar).pack(pady=20)
+
     def restablecer_base_datos(self):
-        if messagebox.askyesno("ADVERTENCIA", "¿Desea eliminar TODOS los gastos registrados?"):
+        if messagebox.askyesno("ADVERTENCIA", "¿Borrar TODOS los egresos?"):
             with sqlite3.connect("gimnasio.db") as conn:
                 conn.cursor().execute("DELETE FROM egresos")
                 conn.commit()
-            self.pagina_actual = 1
             self.cargar_datos_db()
 
     def pagina_siguiente(self):
@@ -204,10 +191,3 @@ class ControlGastos(ctk.CTkFrame):
         if self.pagina_actual > 1:
             self.pagina_actual -= 1
             self.actualizar_tabla()
-
-if __name__ == "__main__":
-    root = ctk.CTk()
-    root.title("Sistema Gym - Control de Gastos")
-    root.geometry("1150x750")
-    ControlGastos(root).pack(fill="both", expand=True)
-    root.mainloop()
