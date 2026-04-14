@@ -18,7 +18,7 @@ class AplicacionPrincipal(ctk.CTk):
         self.title("SISTEMA DE GESTIÓN DE GIMNASIO")
         self.geometry("1300x850")
         ctk.set_appearance_mode("dark")
-        
+
         # Inicializar base de datos
         crear_base_de_datos()
 
