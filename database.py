@@ -6,7 +6,7 @@ def crear_base_de_datos():
     
     cursor.execute("PRAGMA journal_mode=WAL;")
 
-    # 1. TABLA DE CLIENTES (Actualizada con columna 'pago')
+    # 1. TABLA DE CLIENTES
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS clientes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,7 +52,19 @@ def crear_base_de_datos():
         )
     ''')
 
-    # 3. TABLA DE EGRESOS
+    # 3. TABLA DE INGRESOS (Nueva/Asegurada)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS ingresos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_cliente INTEGER,
+            monto REAL NOT NULL,
+            fecha DATE NOT NULL,
+            detalle TEXT,
+            FOREIGN KEY (id_cliente) REFERENCES clientes(id)
+        )
+    ''')
+
+    # 4. TABLA DE EGRESOS
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS egresos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,7 +76,7 @@ def crear_base_de_datos():
         )
     ''')
 
-    # 4. TABLA DE RUTINAS (Asegúrate que esté así en database.py)
+    # 5. TABLA DE RUTINAS
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS rutinas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -81,27 +93,13 @@ def crear_base_de_datos():
     ''')
 
     # --- LÓGICA DE ACTUALIZACIÓN ---
-    # Intenta agregar la columna 'pago' a clientes si la tabla ya existía
     try:
         cursor.execute("ALTER TABLE clientes ADD COLUMN pago TEXT DEFAULT 'Pendiente'")
-    except sqlite3.OperationalError:
-        pass 
-
-    try:
-        cursor.execute("ALTER TABLE planes ADD COLUMN dias INTEGER DEFAULT 30")
-    except sqlite3.OperationalError:
-        pass
-
-    try:
-        cursor.execute("ALTER TABLE rutinas ADD COLUMN id_cliente INTEGER NOT NULL DEFAULT 0")
-        print("Columna id_cliente agregada con éxito")
-    except sqlite3.OperationalError:
-        # Si ya existe, no hará nada
-        pass
+    except sqlite3.OperationalError: pass 
 
     conexion.commit()
     conexion.close()
-    print("Base de datos actualizada correctamente.")
+    print("Base de datos y tabla de ingresos preparadas correctamente.")
 
 if __name__ == "__main__":
     crear_base_de_datos()
