@@ -48,7 +48,7 @@ class RegistroClientes(ctk.CTkFrame):
         self.entry_nacimiento.grid(row=3, column=0, pady=5, padx=20, sticky="w")
         self.entry_nacimiento.bind("<FocusOut>", self.calcular_edad)
 
-        self.label_edad = ctk.CTkLabel(self.frame_datos, text="Edad: --", font=("Arial", 12, "bold"), text_color="cyan")
+        self.label_edad = ctk.CTkLabel(self.frame_datos, text="Edad: --", font=("Arial", 12, "bold"), text_color="#0d6efd")
         self.label_edad.grid(row=3, column=1, pady=5, padx=20, sticky="w")
 
         # --- SECCIÓN: PLAN Y GESTIÓN ---
@@ -110,11 +110,11 @@ class RegistroClientes(ctk.CTkFrame):
 
         self.btn_registrar = ctk.CTkButton(self.scroll_frame, text="Registrar", 
                                            width=400, height=50, font=("Arial", 16, "bold"),
-                                           fg_color="#2ecc71", hover_color="#27ae60", command=self.guardar_datos)
+                                           fg_color="#198754", hover_color="#146C43", command=self.guardar_datos)
         self.btn_registrar.pack(pady=40)
 
     def seccion_titulo(self, texto):
-        ctk.CTkLabel(self.scroll_frame, text=texto, font=("Arial", 18, "bold"), text_color="#FFCC00").pack(pady=(20, 5))
+        ctk.CTkLabel(self.scroll_frame, text=texto, font=("Arial", 18, "bold"), text_color="#0d6efd").pack(pady=(20, 5))
 
     def crear_campo_grid(self, parent, label_text, row, col):
         frame = ctk.CTkFrame(parent, fg_color="transparent")
@@ -126,7 +126,7 @@ class RegistroClientes(ctk.CTkFrame):
 
     def crear_pregunta_grid(self, parent, pregunta, row, col):
         var = ctk.IntVar(value=0)
-        frame = ctk.CTkFrame(parent, fg_color="transparent", border_width=1, border_color="#444")
+        frame = ctk.CTkFrame(parent, fg_color="transparent", border_width=1, border_color="#0d6efd")
         frame.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
         ctk.CTkLabel(frame, text=pregunta, font=("Arial", 12, "bold")).pack(pady=5)
         f_radio = ctk.CTkFrame(frame, fg_color="transparent")

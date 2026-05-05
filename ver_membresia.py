@@ -62,11 +62,11 @@ class VerMembresia(ctk.CTkFrame):
         # Realizado = Verde (#2ecc71)
         # No Pago = Rojo (#e74c3c)
         if estado_pago == "Realizado":
-            color_pago = "#2ecc71"
+            color_pago = "#198754"
         elif estado_pago == "Pendiente":
-            color_pago = "#FFCC00"
+            color_pago = "#ffc107"
         else: # "No Pago" u otros
-            color_pago = "#e74c3c"
+            color_pago = "#dc3545"
 
         fecha_ins_bonita = self.formatear_fecha_gui(m['fecha_inscripcion'])
         fecha_ven_bonita = self.formatear_fecha_gui(m['fecha_vencimiento'])
@@ -78,8 +78,8 @@ class VerMembresia(ctk.CTkFrame):
         self.crear_item_dato(card, "Duración del Plan:", f"{m['dias']} días")
         self.crear_item_dato(card, "Precio del Plan:", f"$ {m['precio']}")
 
-        ctk.CTkButton(self.scroll_frame, text="ACTUALIZAR", 
-                     fg_color="#2ecc71", hover_color="#27ae60", height=50, 
+        ctk.CTkButton(self.scroll_frame, text="Editar", 
+                     fg_color="#6610f2", hover_color="#520DC2", height=50, 
                      font=("Arial", 16, "bold"),
                      command=lambda: self.abrir_modal_renovacion(m)).pack(pady=40)
 
@@ -168,4 +168,4 @@ class VerMembresia(ctk.CTkFrame):
             except Exception as e:
                 messagebox.showerror("Error", f"Error: {e}")
 
-        ctk.CTkButton(modal, text="CONFIRMAR ACTUALIZACIÓN", fg_color="#2ecc71", height=40, command=procesar_actualizacion).pack(pady=30)
+        ctk.CTkButton(modal, text="Actualizar", fg_color="#20c997", height=40, command=procesar_actualizacion).pack(pady=30)

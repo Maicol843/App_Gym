@@ -61,14 +61,14 @@ class AplicacionPrincipal(ctk.CTk):
             ("REGISTROS", self.mostrar_registro, "#34495e"),
             ("CLIENTES", self.mostrar_clientes, "#34495e"),
             ("MEMBRESÍAS", self.mostrar_membresia, "#34495e"),
-            ("INGRESOS", self.mostrar_ingresos, "#2ecc71"),
-            ("EGRESOS", self.mostrar_egresos, "#e74c3c")
+            ("INGRESOS", self.mostrar_ingresos, "#198754"),
+            ("EGRESOS", self.mostrar_egresos, "#dc3545")
         ]
 
         for texto, comando, color in menu_items:
             # Los botones se empaquetan dentro de self.menu_container
             btn = ctk.CTkButton(self.menu_container, text=texto, command=comando, 
-                                fg_color=color, hover_color="#5dade2",
+                                fg_color=color, hover_color="#1f538d",
                                 width=140, height=45, font=("Arial", 12, "bold"))
             btn.pack(side="left", padx=10, pady=12)
 
@@ -125,9 +125,9 @@ class VistaDashboardInterno(ctk.CTkFrame):
         self.crear_interfaz_tarjetas()
         
         # Botón de actualización
-        self.btn_actualizar = ctk.CTkButton(self, text="ACTUALIZAR DATOS", 
+        self.btn_actualizar = ctk.CTkButton(self, text="Actualizar", 
                                             command=self.refrescar_datos,
-                                            fg_color="#34495e", hover_color="#2c3e50",
+                                            fg_color="#20c997", hover_color="#1AA179",
                                             width=200, height=40, font=("Arial", 13, "bold"))
         self.btn_actualizar.pack(pady=20)
 
@@ -137,10 +137,10 @@ class VistaDashboardInterno(ctk.CTkFrame):
         self.frame_tarjetas.columnconfigure((0, 1), weight=1)
         self.frame_tarjetas.rowconfigure((0, 1), weight=1)
 
-        self.lbl_clientes = self.crear_tarjeta("CLIENTES ACTIVOS", "#3498db", 0, 0)
-        self.lbl_ingresos = self.crear_tarjeta("TOTAL INGRESOS", "#2ecc71", 0, 1)
-        self.lbl_egresos = self.crear_tarjeta("TOTAL EGRESOS", "#e74c3c", 1, 0)
-        self.lbl_ganancia = self.crear_tarjeta("BALANCE NETO", "#f39c12", 1, 1)
+        self.lbl_clientes = self.crear_tarjeta("CLIENTES ACTIVOS", "#0d6efd", 0, 0)
+        self.lbl_ingresos = self.crear_tarjeta("TOTAL INGRESOS", "#198754", 0, 1)
+        self.lbl_egresos = self.crear_tarjeta("TOTAL EGRESOS", "#dc3545", 1, 0)
+        self.lbl_ganancia = self.crear_tarjeta("BALANCE NETO", "#ffc107", 1, 1)
 
     def crear_tarjeta(self, titulo, color, f, c):
         fr = ctk.CTkFrame(self.frame_tarjetas, fg_color="#2b2b2b", border_color=color, border_width=2)

@@ -51,10 +51,10 @@ class VentanaClientes(ctk.CTkFrame):
         self.frame_acciones = ctk.CTkFrame(self, fg_color="transparent")
         self.frame_acciones.pack(pady=10)
 
-        self.btn_ficha = ctk.CTkButton(self.frame_acciones, text="Ver Ficha", fg_color="#3498db", command=self.ir_a_ficha)
+        self.btn_ficha = ctk.CTkButton(self.frame_acciones, text="Ver Ficha", fg_color="#0d6efd", command=self.ir_a_ficha)
         self.btn_ficha.grid(row=0, column=0, padx=10)
 
-        self.btn_membresia = ctk.CTkButton(self.frame_acciones, text="Ver Membresía", fg_color="#2ecc71", command=self.ir_a_membresia)
+        self.btn_membresia = ctk.CTkButton(self.frame_acciones, text="Ver Membresía", fg_color="#198754", command=self.ir_a_membresia)
         self.btn_membresia.grid(row=0, column=1, padx=10)
 
         self.btn_rutina = ctk.CTkButton(self.frame_acciones, text="Ver Rutinas", fg_color="#f1c40f", text_color="black", command=self.ir_a_rutinas)
@@ -238,7 +238,8 @@ class VentanaClientes(ctk.CTkFrame):
             
             header = ctk.CTkFrame(self.frame_rutinas_container, fg_color="transparent")
             header.pack(fill="x", padx=20, pady=10)
-            ctk.CTkButton(header, text="← VOLVER AL LISTADO", width=150, 
+
+            ctk.CTkButton(header, text="← Volver", width=150, 
                           command=self.regresar_de_rutinas).pack(side="left")
 
             self.vista_rutinas = VerRutinas(self.frame_rutinas_container, id_cliente=id_cliente_seleccionado)

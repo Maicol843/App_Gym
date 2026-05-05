@@ -28,7 +28,7 @@ class GestionGimnasio(ctk.CTkFrame): # Modificado para ser un Frame
         self.entry_dias.grid(row=0, column=5, padx=5, pady=20)
 
         self.btn_guardar = ctk.CTkButton(self.frame_registro, text="Guardar", 
-                                          command=self.guardar_plan, fg_color="#2ecc71")
+                                          command=self.guardar_plan, fg_color="#198754")
         self.btn_guardar.grid(row=0, column=6, padx=15, pady=20)
 
         # --- TABLA DE PLANES ---
@@ -39,19 +39,19 @@ class GestionGimnasio(ctk.CTkFrame): # Modificado para ser un Frame
         self.frame_acciones = ctk.CTkFrame(self, fg_color="transparent")
         self.frame_acciones.pack(pady=20)
 
-        ctk.CTkButton(self.frame_acciones, text="Editar Seleccionado", 
-                       command=self.abrir_modal_edicion, fg_color="#3498db").pack(side="left", padx=10)
-        ctk.CTkButton(self.frame_acciones, text="Eliminar Plan", 
-                       command=self.confirmar_eliminar, fg_color="#e74c3c").pack(side="left", padx=10)
-        ctk.CTkButton(self.frame_acciones, text="Restablecer Todo", 
-                       command=self.confirmar_restablecer, fg_color="gray").pack(side="left", padx=10)
+        ctk.CTkButton(self.frame_acciones, text="Editar", 
+                       command=self.abrir_modal_edicion, fg_color="#0d6efd").pack(side="left", padx=10)
+        ctk.CTkButton(self.frame_acciones, text="Eliminar", 
+                       command=self.confirmar_eliminar, fg_color="#dc3545").pack(side="left", padx=10)
+        ctk.CTkButton(self.frame_acciones, text="Restablecer", 
+                       command=self.confirmar_restablecer, fg_color="#0AA2C0").pack(side="left", padx=10)
 
     def crear_tabla(self):
         style = ttk.Style()
         style.theme_use("clam")
         style.configure("Treeview", background="#2b2b2b", foreground="white", 
                         fieldbackground="#2b2b2b", rowheight=35, font=("Arial", 11))
-        style.map("Treeview", background=[('selected', '#3498db')])
+        style.map("Treeview", background=[('selected', '#1f538d')])
 
         self.tabla = ttk.Treeview(self, columns=("N°", "Nombre", "Precio", "Días"), show="headings")
         self.tabla.heading("N°", text="Nro.")
@@ -145,7 +145,7 @@ class GestionGimnasio(ctk.CTkFrame): # Modificado para ser un Frame
             except:
                 messagebox.showerror("Error", "Datos inválidos")
 
-        ctk.CTkButton(modal, text="Actualizar", fg_color="#2ecc71", command=confirmar).pack(pady=30)
+        ctk.CTkButton(modal, text="Actualizar", fg_color="#20c997", command=confirmar).pack(pady=30)
 
     def confirmar_eliminar(self):
         selected = self.tabla.selection()

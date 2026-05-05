@@ -80,12 +80,14 @@ def crear_base_de_datos():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS rutinas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_cliente INTEGER NOT NULL, 
-            nombre_rutina TEXT NOT NULL,
+            id_cliente INTEGER NOT NULL,
+            nombre_tabla TEXT NOT NULL,
+            nombre_rutina TEXT,
             ejercicio TEXT NOT NULL,
-            series INTEGER NOT NULL,
-            repeticiones INTEGER NOT NULL,
-            grupo_muscular TEXT NOT NULL,
+            series TEXT,
+            repeticiones TEXT,
+            grupo_muscular TEXT,
+            carga_peso TEXT,
             dias TEXT NOT NULL,
             imagen_path TEXT,
             FOREIGN KEY (id_cliente) REFERENCES clientes(id) ON DELETE CASCADE

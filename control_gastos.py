@@ -15,7 +15,7 @@ class ControlGastos(ctk.CTkFrame):
         # --- CABECERA ---
         self.frame_top = ctk.CTkFrame(self, fg_color="transparent")
         self.frame_top.pack(pady=20, padx=20, fill="x")
-        ctk.CTkLabel(self.frame_top, text="GESTIÓN DE EGRESOS", font=("Arial", 28, "bold")).pack(side="left")
+        ctk.CTkLabel(self.frame_top, text="EGRESOS", font=("Arial", 28, "bold")).pack(side="left")
 
         # --- PANEL DE CONTROLES ---
         self.frame_controles = ctk.CTkFrame(self, fg_color="transparent")
@@ -26,16 +26,16 @@ class ControlGastos(ctk.CTkFrame):
         self.entry_busqueda.bind("<KeyRelease>", lambda e: self.cargar_datos_db())
 
         # Botones de Acción
-        self.btn_ingresar = ctk.CTkButton(self.frame_controles, text="+ AGREGAR", width=110, fg_color="#2ecc71", command=self.abrir_modal_ingreso)
+        self.btn_ingresar = ctk.CTkButton(self.frame_controles, text="Agregar", width=110, fg_color="#198754", command=self.abrir_modal_ingreso)
         self.btn_ingresar.pack(side="left", padx=5)
 
-        self.btn_editar = ctk.CTkButton(self.frame_controles, text="EDITAR", width=100, fg_color="#3498db", command=self.preparar_edicion)
+        self.btn_editar = ctk.CTkButton(self.frame_controles, text="Editar", width=100, fg_color="#0d6efd", command=self.preparar_edicion)
         self.btn_editar.pack(side="left", padx=5)
 
-        self.btn_eliminar = ctk.CTkButton(self.frame_controles, text="ELIMINAR", width=100, fg_color="#e74c3c", command=self.eliminar_gasto)
+        self.btn_eliminar = ctk.CTkButton(self.frame_controles, text="Eliminar", width=100, fg_color="#dc3545", command=self.eliminar_gasto)
         self.btn_eliminar.pack(side="left", padx=5)
 
-        self.btn_reset = ctk.CTkButton(self.frame_controles, text="RESTABLECER", width=120, fg_color="#95a5a6", command=self.restablecer_base_datos)
+        self.btn_reset = ctk.CTkButton(self.frame_controles, text="Restablecer", width=120, fg_color="#0AA2C0", command=self.restablecer_base_datos)
         self.btn_reset.pack(side="left", padx=5)
 
         # --- TABLA DE DATOS ---
@@ -69,13 +69,13 @@ class ControlGastos(ctk.CTkFrame):
     def crear_tabla_visual(self):
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("Treeview", background="#2b2b2b", foreground="white", fieldbackground="#2b2b2b", rowheight=35)
+        style.configure("Treeview", background="#1f538d", foreground="white", fieldbackground="#2b2b2b", rowheight=35)
         style.configure("Treeview.Heading", background="#333", foreground="white", font=("Arial", 12, "bold"))
         
-        columnas = ("Nro", "Fecha", "Detalle", "Cant.", "P. Unit", "Importe", "ID")
+        columnas = ("Nro", "Fecha", "Detalle", "Cantidad", "P. Unitario", "Importe", "ID")
         self.tabla = ttk.Treeview(self.frame_tabla, columns=columnas, show="headings")
         
-        anchos = {"Nro": 50, "Fecha": 120, "Detalle": 300, "Cant.": 80, "P. Unit": 120, "Importe": 150, "ID": 0}
+        anchos = {"Nro": 50, "Fecha": 120, "Detalle": 300, "Cantidad": 80, "P. Unitario": 120, "Importe": 150, "ID": 0}
         for col in columnas:
             self.tabla.heading(col, text=col)
             self.tabla.column(col, width=anchos[col], anchor="center")
