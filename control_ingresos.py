@@ -44,7 +44,7 @@ class VentanaIngresos(ctk.CTkFrame):
         self.entry_busqueda.pack(side="left", padx=5)
         self.entry_busqueda.bind("<KeyRelease>", lambda e: self.aplicar_filtros())
 
-        self.btn_grafica = ctk.CTkButton(self.frame_filtros, text="Ver gráfica", command=self.alternar_vista_grafica)
+        self.btn_grafica = ctk.CTkButton(self.frame_filtros, text="Ver gráfica", fg_color="#6610f2", hover_color="#520DC2", command=self.alternar_vista_grafica)
         self.btn_grafica.pack(side="left", padx=10)
 
         # Contenedor para Tabla/Gráfica

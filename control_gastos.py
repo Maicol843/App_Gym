@@ -3,6 +3,10 @@ from tkinter import ttk, messagebox
 import sqlite3
 from datetime import datetime
 
+# --- LIBRERÍAS PARA LA GRÁFICA ---
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 class ControlGastos(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent, fg_color="transparent")
@@ -11,6 +15,7 @@ class ControlGastos(ctk.CTkFrame):
         self.pagina_actual = 1
         self.registros_por_pagina = 10
         self.datos_totales = []
+        self.canvas_grafica = None 
 
         # --- CABECERA ---
         self.frame_top = ctk.CTkFrame(self, fg_color="transparent")
@@ -38,12 +43,17 @@ class ControlGastos(ctk.CTkFrame):
         self.btn_reset = ctk.CTkButton(self.frame_controles, text="Restablecer", width=120, fg_color="#0AA2C0", command=self.restablecer_base_datos)
         self.btn_reset.pack(side="left", padx=5)
 
-        # --- TABLA DE DATOS ---
-        self.frame_tabla = ctk.CTkFrame(self)
-        self.frame_tabla.pack(pady=10, padx=20, fill="both", expand=True)
+        self.btn_grafica = ctk.CTkButton(self.frame_controles, text="Ver gráfica", width=120, fg_color="#6610f2", 
+                                         hover_color="#520DC2", command=self.alternar_vista_grafica)
+        self.btn_grafica.pack(side="left", padx=5)
+
+        # --- CONTENEDOR PRINCIPAL ---
+        self.contenedor_principal = ctk.CTkFrame(self)
+        self.contenedor_principal.pack(pady=10, padx=20, fill="both", expand=True)
+
         self.crear_tabla_visual()
 
-        # --- RESUMEN (TOTAL DE EGRESOS) ---
+        # --- RESUMEN ---
         self.frame_resumen = ctk.CTkFrame(self, fg_color="#1a1a1a", height=50)
         self.frame_resumen.pack(pady=5, padx=20, fill="x")
         
@@ -66,16 +76,65 @@ class ControlGastos(ctk.CTkFrame):
 
         self.cargar_datos_db()
 
+    def alternar_vista_grafica(self):
+        if self.canvas_grafica:
+            self.canvas_grafica.get_tk_widget().destroy()
+            self.canvas_grafica = None
+            self.frame_tabla.pack(fill="both", expand=True)
+            self.btn_grafica.configure(text="Ver gráfica")
+            self.frame_paginacion.pack(pady=15)
+        else:
+            self.frame_tabla.pack_forget()
+            self.frame_paginacion.pack_forget()
+            self.btn_grafica.configure(text="Ver tabla")
+            self.dibujar_grafica_egresos()
+
+    def dibujar_grafica_egresos(self):
+        meses_nombres = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+        egresos_mensuales = {i: 0.0 for i in range(1, 13)}
+        try:
+            with sqlite3.connect("gimnasio.db") as conn:
+                cursor = conn.cursor()
+                # Ajuste: substr para extraer el mes de 'dd-mm-aaaa' (posiciones 4 y 5)
+                cursor.execute("SELECT CAST(substr(fecha, 4, 2) AS INTEGER) as mes_num, SUM(importe) FROM egresos GROUP BY mes_num")
+                for mes, total in cursor.fetchall():
+                    if mes: egresos_mensuales[mes] = total
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al consultar egresos: {e}")
+            return
+        
+        valores = [egresos_mensuales[i] for i in range(1, 13)]
+        fig, ax = plt.subplots(figsize=(10, 5), dpi=100)
+        fig.patch.set_facecolor('#2b2b2b')
+        ax.set_facecolor('#2b2b2b')
+        barras = ax.bar(meses_nombres, valores, color='#e74c3c', width=0.7)
+        for barra in barras:
+            height = barra.get_height()
+            if height > 0:
+                ax.annotate(f'${height:,.0f}', xy=(barra.get_x() + barra.get_width() / 2, height),
+                            xytext=(0, 5), textcoords="offset points", ha='center', va='bottom', color='white', fontsize=9, fontweight='bold')
+        ax.set_title("Egresos Totales por Mes", color='white', fontsize=16, pad=20)
+        ax.tick_params(axis='both', colors='white')
+        for spine in ax.spines.values(): spine.set_visible(False)
+        self.canvas_grafica = FigureCanvasTkAgg(fig, master=self.contenedor_principal)
+        self.canvas_grafica.draw()
+        self.canvas_grafica.get_tk_widget().pack(fill="both", expand=True, padx=10, pady=10)
+
     def crear_tabla_visual(self):
+        self.frame_tabla = ctk.CTkFrame(self.contenedor_principal, fg_color="transparent")
+        self.frame_tabla.pack(fill="both", expand=True)
+
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("Treeview", background="#1f538d", foreground="white", fieldbackground="#2b2b2b", rowheight=35)
-        style.configure("Treeview.Heading", background="#333", foreground="white", font=("Arial", 12, "bold"))
+        style.configure("Treeview", background="#1f538d", foreground="white", fieldbackground="#2b2b2b", 
+                        rowheight=40, font=("Arial", 14)) # Letra más grande
+        style.configure("Treeview.Heading", background="#333", foreground="white", 
+                        font=("Arial", 14, "bold")) # Cabecera más grande
         
         columnas = ("Nro", "Fecha", "Detalle", "Cantidad", "P. Unitario", "Importe", "ID")
         self.tabla = ttk.Treeview(self.frame_tabla, columns=columnas, show="headings")
         
-        anchos = {"Nro": 50, "Fecha": 120, "Detalle": 300, "Cantidad": 80, "P. Unitario": 120, "Importe": 150, "ID": 0}
+        anchos = {"Nro": 60, "Fecha": 140, "Detalle": 300, "Cantidad": 90, "P. Unitario": 130, "Importe": 150, "ID": 0}
         for col in columnas:
             self.tabla.heading(col, text=col)
             self.tabla.column(col, width=anchos[col], anchor="center")
@@ -88,41 +147,24 @@ class ControlGastos(ctk.CTkFrame):
         try:
             with sqlite3.connect("gimnasio.db") as conn:
                 cursor = conn.cursor()
-                query = "SELECT fecha, detalle, cantidad, p_unit, importe, id FROM egresos WHERE detalle LIKE ? ORDER BY fecha DESC"
+                # Ordenamos por ID descendente para ver lo último primero si las fechas son iguales
+                query = "SELECT fecha, detalle, cantidad, p_unit, importe, id FROM egresos WHERE detalle LIKE ? ORDER BY id DESC"
                 cursor.execute(query, (f'%{termino}%',))
                 self.datos_totales = cursor.fetchall()
-            
-            # Calcular el total sumando la columna 'importe' (índice 4)
             suma_total = sum(row[4] for row in self.datos_totales)
             self.lbl_total_egresos.configure(text=f"TOTAL EGRESOS: $ {suma_total:,.2f}")
-            
             self.actualizar_tabla()
-        except Exception as e:
-            print(f"Error: {e}")
+        except Exception as e: print(f"Error: {e}")
 
     def actualizar_tabla(self):
         for item in self.tabla.get_children(): self.tabla.delete(item)
         inicio = (self.pagina_actual - 1) * self.registros_por_pagina
         datos_pagina = self.datos_totales[inicio:inicio + self.registros_por_pagina]
-
         for i, row in enumerate(datos_pagina, start=inicio + 1):
-            f_vis = datetime.strptime(row[0], "%Y-%m-%d").strftime("%d-%m-%Y")
-            self.tabla.insert("", "end", values=(i, f_vis, row[1], row[2], f"${row[3]:,.2f}", f"${row[4]:,.2f}", row[5]))
-
+            # Mostramos la fecha tal cual está en la DB (dd-mm-aaaa)[cite: 17]
+            self.tabla.insert("", "end", values=(i, row[0], row[1], row[2], f"${row[3]:,.2f}", f"${row[4]:,.2f}", row[5]))
         total_pag = max(1, (len(self.datos_totales) + self.registros_por_pagina - 1) // self.registros_por_pagina)
         self.label_paginas.configure(text=f"Página {self.pagina_actual} de {total_pag}")
-
-    def eliminar_gasto(self):
-        item = self.tabla.selection()
-        if not item:
-            messagebox.showwarning("Atención", "Seleccione un registro.")
-            return
-        datos = self.tabla.item(item)['values']
-        if messagebox.askyesno("Confirmar", f"¿Eliminar '{datos[2]}'?"):
-            with sqlite3.connect("gimnasio.db") as conn:
-                conn.cursor().execute("DELETE FROM egresos WHERE id=?", (datos[6],))
-                conn.commit()
-            self.cargar_datos_db()
 
     def preparar_edicion(self):
         item = self.tabla.selection()
@@ -134,8 +176,16 @@ class ControlGastos(ctk.CTkFrame):
     def abrir_modal_ingreso(self, editar_datos=None):
         modal = ctk.CTkToplevel(self)
         modal.title("Gasto")
-        modal.geometry("400x500")
+        modal.geometry("400x550")
         modal.grab_set()
+
+        # NUEVO: Fecha en formato dd-mm-aaaa[cite: 17]
+        ctk.CTkLabel(modal, text="Fecha (DD-MM-AAAA):").pack(pady=(10, 0))
+        entry_fec = ctk.CTkEntry(modal, placeholder_text="DD-MM-AAAA", width=300)
+        entry_fec.pack(pady=5)
+        
+        if not editar_datos:
+            entry_fec.insert(0, datetime.now().strftime("%d-%m-%Y")) # Por defecto hoy[cite: 17]
 
         entry_det = ctk.CTkEntry(modal, placeholder_text="Detalle", width=300)
         entry_det.pack(pady=15)
@@ -145,6 +195,8 @@ class ControlGastos(ctk.CTkFrame):
         entry_punit.pack(pady=15)
 
         if editar_datos:
+            entry_fec.delete(0, "end")
+            entry_fec.insert(0, editar_datos[1]) # Carga fecha dd-mm-aaaa[cite: 17]
             entry_det.insert(0, editar_datos[2])
             entry_cant.insert(0, editar_datos[3])
             p_limpio = str(editar_datos[4]).replace("$", "").replace(",", "")
@@ -152,27 +204,43 @@ class ControlGastos(ctk.CTkFrame):
 
         def guardar():
             try:
+                fec = entry_fec.get()
                 det = entry_det.get()
                 cant = int(entry_cant.get())
                 p_u = float(entry_punit.get())
                 imp = cant * p_u
-                fec = datetime.now().strftime("%Y-%m-%d")
+
+                # Validamos formato dd-mm-aaaa[cite: 17]
+                datetime.strptime(fec, "%d-%m-%Y")
 
                 with sqlite3.connect("gimnasio.db") as conn:
                     cursor = conn.cursor()
                     if editar_datos:
-                        cursor.execute("UPDATE egresos SET detalle=?, cantidad=?, p_unit=?, importe=? WHERE id=?",
-                                       (det, cant, p_u, imp, editar_datos[6]))
+                        cursor.execute("UPDATE egresos SET fecha=?, detalle=?, cantidad=?, p_unit=?, importe=? WHERE id=?", 
+                                       (fec, det, cant, p_u, imp, editar_datos[6]))
                     else:
-                        cursor.execute("INSERT INTO egresos (fecha, detalle, cantidad, p_unit, importe) VALUES (?,?,?,?,?)",
+                        cursor.execute("INSERT INTO egresos (fecha, detalle, cantidad, p_unit, importe) VALUES (?,?,?,?,?)", 
                                        (fec, det, cant, p_u, imp))
                     conn.commit()
                 self.cargar_datos_db()
                 modal.destroy()
-            except:
-                messagebox.showerror("Error", "Datos inválidos.")
+            except ValueError:
+                messagebox.showerror("Error", "Formato de fecha incorrecto (DD-MM-AAAA) o números inválidos.")
 
         ctk.CTkButton(modal, text="GUARDAR", command=guardar).pack(pady=20)
+
+    # ... (Siguen métodos eliminar_gasto, restablecer_base_datos, pagina_siguiente, pagina_anterior iguales)
+    def eliminar_gasto(self):
+        item = self.tabla.selection()
+        if not item:
+            messagebox.showwarning("Atención", "Seleccione un registro.")
+            return
+        datos = self.tabla.item(item)['values']
+        if messagebox.askyesno("Confirmar", f"¿Eliminar '{datos[2]}'?"):
+            with sqlite3.connect("gimnasio.db") as conn:
+                conn.cursor().execute("DELETE FROM egresos WHERE id=?", (datos[6],))
+                conn.commit()
+            self.cargar_datos_db()
 
     def restablecer_base_datos(self):
         if messagebox.askyesno("ADVERTENCIA", "¿Borrar TODOS los egresos?"):
