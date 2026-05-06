@@ -5,7 +5,7 @@ a = Analysis(
     ['dashboard.py'],
     pathex=[],
     binaries=[],
-    datas=[('img', 'img')],
+    datas=[('img', 'img'), ('gimnasio.db', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
