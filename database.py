@@ -76,7 +76,7 @@ def crear_base_de_datos():
         )
     ''')
 
-    # 5. TABLA DE RUTINAS
+    # 5. TABLA DE RUTINAS (Se agregó video_link)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS rutinas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,6 +90,7 @@ def crear_base_de_datos():
             carga_peso TEXT,
             dias TEXT NOT NULL,
             imagen_path TEXT,
+            video_link TEXT,
             FOREIGN KEY (id_cliente) REFERENCES clientes(id) ON DELETE CASCADE
         )
     ''')
@@ -99,9 +100,16 @@ def crear_base_de_datos():
         cursor.execute("ALTER TABLE clientes ADD COLUMN pago TEXT DEFAULT 'Pendiente'")
     except sqlite3.OperationalError: pass 
 
+    # Agregamos video_link a tablas existentes si no existe
+    try:
+        cursor.execute("ALTER TABLE rutinas ADD COLUMN video_link TEXT")
+    except sqlite3.OperationalError:
+        # La columna ya existe
+        pass
+
     conexion.commit()
     conexion.close()
-    print("Base de datos y tabla de ingresos preparadas correctamente.")
+    print("Base de datos preparada correctamente.")
 
 if __name__ == "__main__":
     crear_base_de_datos()

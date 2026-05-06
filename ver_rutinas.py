@@ -3,6 +3,7 @@ from tkinter import messagebox, filedialog
 import sqlite3
 import os
 import shutil
+import webbrowser  # Importado para abrir enlaces en el navegador
 from PIL import Image
 from datetime import datetime
 
@@ -21,11 +22,9 @@ class VerRutinas(ctk.CTkFrame):
         self.frame_acciones = ctk.CTkFrame(self, fg_color="transparent")
         self.frame_acciones.pack(pady=15, padx=20, fill="x")
 
-        # Contenedor interno para lograr el centrado de los botones
         self.container_botones = ctk.CTkFrame(self.frame_acciones, fg_color="transparent")
         self.container_botones.pack(expand=True)    
 
-        # Botones de gestión de tablas y rutinas
         ctk.CTkButton(self.container_botones, text="Crear tabla", fg_color="#0d6efd", 
                       command=self.modal_crear_tabla).pack(side="left", padx=5)
         
@@ -43,6 +42,13 @@ class VerRutinas(ctk.CTkFrame):
         self.area_tablas.pack(pady=10, padx=20, fill="both", expand=True)
 
         self.cargar_tablas_visuales()
+
+    def abrir_enlace(self, url):
+        """Valida y abre el enlace del video en el navegador."""
+        if url and (url.startswith("http://") or url.startswith("https://")):
+            webbrowser.open(url)
+        else:
+            messagebox.showwarning("Enlace no válido", "El enlace no es una URL válida o está vacío.")
 
     def obtener_todos_los_nombres_tablas(self):
         nombres_completos = set(self.tablas_vacias_memoria)
@@ -107,7 +113,7 @@ class VerRutinas(ctk.CTkFrame):
     def modal_configurar_rutina(self, editar_id=None):
         modal = ctk.CTkToplevel(self)
         modal.title("Configurar Rutina")
-        modal.geometry("500x780")
+        modal.geometry("500x820")
         modal.grab_set()
         modal.attributes("-topmost", True)
 
@@ -140,6 +146,9 @@ class VerRutinas(ctk.CTkFrame):
             cb = ctk.CTkCheckBox(dias_frame, text=d, variable=v, onvalue=d, offvalue="off")
             cb.grid(row=i//3, column=i%3, padx=15, pady=10, sticky="w")
 
+        ent_video = ctk.CTkEntry(scr, placeholder_text="Enlace del Video (YouTube/Drive)", width=350)
+        ent_video.pack(pady=(15, 5))
+
         self.ruta_img_temp = None
         img_actual_path = None
         lbl_status_img = ctk.CTkLabel(scr, text="Ninguna imagen seleccionada", font=("Arial", 10), text_color="gray")
@@ -168,6 +177,7 @@ class VerRutinas(ctk.CTkFrame):
                         ent_series.insert(0, r['series'] or "")
                         ent_reps.insert(0, r['repeticiones'] or "")
                         ent_peso.insert(0, r['carga_peso'] or "")
+                        ent_video.insert(0, r['video_link'] or "")
                         img_actual_path = r['imagen_path']
                         dias_db = (r['dias'] or "").split(",")
                         for d in dias_db:
@@ -178,6 +188,7 @@ class VerRutinas(ctk.CTkFrame):
             tabla_sel = combo_tabla.get()
             ejercicio_nom = ent_ejercicio.get().strip()
             sel_dias = [v.get() for v in vars_dias.values() if v.get() != "off"]
+            video_url = ent_video.get().strip()
 
             if not ejercicio_nom or not sel_dias:
                 messagebox.showwarning("Atención", "Nombre del ejercicio y días son obligatorios.", parent=modal)
@@ -194,18 +205,17 @@ class VerRutinas(ctk.CTkFrame):
                     cursor = conn.cursor()
                     if editar_id:
                         cursor.execute("""UPDATE rutinas SET nombre_tabla=?, nombre_rutina=?, ejercicio=?, series=?, 
-                                          repeticiones=?, grupo_muscular=?, carga_peso=?, dias=?, imagen_path=? WHERE id=?""",
+                                          repeticiones=?, grupo_muscular=?, carga_peso=?, dias=?, imagen_path=?, video_link=? WHERE id=?""",
                                        (tabla_sel, ent_rutina.get(), ejercicio_nom, ent_series.get(), ent_reps.get(), 
-                                        ent_grupo.get(), ent_peso.get(), ",".join(sel_dias), path_final_imagen, editar_id))
+                                        ent_grupo.get(), ent_peso.get(), ",".join(sel_dias), path_final_imagen, video_url, editar_id))
                     else:
                         cursor.execute("""INSERT INTO rutinas (id_cliente, nombre_tabla, nombre_rutina, ejercicio, 
-                                          series, repeticiones, grupo_muscular, carga_peso, dias, imagen_path) 
-                                          VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                                          series, repeticiones, grupo_muscular, carga_peso, dias, imagen_path, video_link) 
+                                          VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
                                        (self.id_cliente, tabla_sel, ent_rutina.get(), ejercicio_nom,
                                         ent_series.get(), ent_reps.get(), ent_grupo.get(), ent_peso.get(), 
-                                        ",".join(sel_dias), path_final_imagen))
+                                        ",".join(sel_dias), path_final_imagen, video_url))
                     conn.commit()
-                if tabla_sel in self.tablas_vacias_memoria: self.tablas_vacias_memoria.remove(tabla_sel)
                 modal.destroy()
                 self.cargar_tablas_visuales()
             except Exception as e:
@@ -219,7 +229,7 @@ class VerRutinas(ctk.CTkFrame):
     def ver_detalle_ejercicio(self, id_reg):
         modal = ctk.CTkToplevel(self)
         modal.title("Detalle del Ejercicio")
-        modal.geometry("550x700")
+        modal.geometry("550x750")
         modal.grab_set()
         modal.attributes("-topmost", True)
 
@@ -237,18 +247,42 @@ class VerRutinas(ctk.CTkFrame):
         info_frame = ctk.CTkFrame(scr, fg_color="#1a1a1a", corner_radius=8)
         info_frame.pack(fill="x", pady=10)
         
-        datos = [("Rutina", r['nombre_rutina']), ("Grupo Muscular", r['grupo_muscular']), ("Series", r['series']), 
-                 ("Repeticiones", r['repeticiones']), ("Carga / Peso", r['carga_peso'])]
+        # Datos a mostrar
+        datos = [
+            ("Rutina", r['nombre_rutina']), 
+            ("Grupo Muscular", r['grupo_muscular']), 
+            ("Series", r['series']), 
+            ("Repeticiones", r['repeticiones']), 
+            ("Carga / Peso", r['carga_peso'])
+        ]
+        
         for tit, val in datos:
             f = ctk.CTkFrame(info_frame, fg_color="transparent")
             f.pack(fill="x", padx=15, pady=5)
             ctk.CTkLabel(f, text=f"{tit}:", font=("Arial", 12, "bold"), width=120, anchor="w", text_color="#aaa").pack(side="left")
             ctk.CTkLabel(f, text=str(val) if val else "-", font=("Arial", 13)).pack(side="left", padx=5)
 
+        # SECCIÓN DE VIDEO: Botón con apariencia de enlace
+        if r['video_link'] and r['video_link'].strip():
+            f_video = ctk.CTkFrame(info_frame, fg_color="transparent")
+            f_video.pack(fill="x", padx=15, pady=5)
+            ctk.CTkLabel(f_video, text="Video:", font=("Arial", 12, "bold"), width=120, anchor="w", text_color="#aaa").pack(side="left")
+            
+            btn_video = ctk.CTkButton(f_video, text="Ver video tutorial", 
+                                      fg_color="transparent", 
+                                      text_color="#0d6efd", 
+                                      hover_color="#2b2b2b",
+                                      font=("Arial", 13, "underline"),
+                                      anchor="w",
+                                      command=lambda: self.abrir_enlace(r['video_link']))
+            btn_video.pack(side="left", padx=5)
+
         if r['imagen_path'] and os.path.exists(r['imagen_path']):
-            img_p = Image.open(r['imagen_path'])
-            img_ctk = ctk.CTkImage(img_p, size=(400, 300))
-            ctk.CTkLabel(scr, image=img_ctk, text="").pack(pady=25)
+            try:
+                img_p = Image.open(r['imagen_path'])
+                img_ctk = ctk.CTkImage(img_p, size=(400, 300))
+                ctk.CTkLabel(scr, image=img_ctk, text="").pack(pady=25)
+            except: pass
 
         f_acc = ctk.CTkFrame(scr, fg_color="transparent")
         f_acc.pack(pady=20)
@@ -283,6 +317,7 @@ class VerRutinas(ctk.CTkFrame):
 
     def modal_eliminar_tabla(self):
         opciones = self.obtener_todos_los_nombres_tablas()
+        if not opciones: return
         pop = ctk.CTkToplevel(self)
         pop.geometry("350x200")
         pop.attributes("-topmost", True)
