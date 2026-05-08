@@ -11,14 +11,23 @@ from gestion_membresia import GestionMembresia
 from control_ingresos import VentanaIngresos
 from control_gastos import ControlGastos
 
+import ctypes
+try:
+    ctypes.windll.shcore.SetProcessDpiAwareness(1)
+except Exception:
+    ctypes.windll.user32.SetProcessDPIAware()
+
 class AplicacionPrincipal(ctk.CTk):
     def __init__(self):
         super().__init__()
 
         # Configuración de la Ventana Principal
         self.title("SISTEMA DE GESTIÓN DE GIMNASIO")
-        self.geometry("1300x850")
+        self.geometry("1200x700")
         ctk.set_appearance_mode("dark")
+
+        # Esto es para que se maximice al iniciar
+        self.after(0, lambda: self.state('zoomed'))
 
         # Ruta dinámica para el icono
         if hasattr(sys, '_MEIPASS'):
@@ -154,26 +163,32 @@ class VistaDashboardInterno(ctk.CTkFrame):
         try:
             with sqlite3.connect("gimnasio.db") as conn:
                 cursor = conn.cursor()
+                
+                # Cantidad de clientes
                 cursor.execute("SELECT COUNT(*) FROM clientes")
                 cant_clientes = cursor.fetchone()[0]
                 
+                # Suma de ingresos (desde tabla ingresos)
                 cursor.execute("SELECT SUM(monto) FROM ingresos")
-                suma_ingresos = cursor.fetchone()[0] or 0.0
+                res_ingresos = cursor.fetchone()[0]
+                suma_ingresos = float(res_ingresos) if res_ingresos else 0.0
                 
+                # Suma de egresos
                 cursor.execute("SELECT SUM(importe) FROM egresos")
-                suma_egresos = cursor.fetchone()[0] or 0.0
+                res_egresos = cursor.fetchone()[0]
+                suma_egresos = float(res_egresos) if res_egresos else 0.0
                 
                 balance = suma_ingresos - suma_egresos
 
+                # Actualizar etiquetas
                 self.lbl_clientes.configure(text=str(cant_clientes))
                 self.lbl_ingresos.configure(text=f"$ {suma_ingresos:,.2f}")
                 self.lbl_egresos.configure(text=f"$ {suma_egresos:,.2f}")
                 self.lbl_ganancia.configure(text=f"$ {balance:,.2f}")
                 
-                color_balance = "#2ecc71" if balance >= 0 else "#e74c3c"
-                self.lbl_ganancia.configure(text_color=color_balance)
+                self.lbl_ganancia.configure(text_color="#2ecc71" if balance >= 0 else "#e74c3c")
         except Exception as e:
-            print(f"Error al refrescar datos: {e}")
+            print(f"Error al refrescar dashboard: {e}")
 
 if __name__ == "__main__":
     app = AplicacionPrincipal()

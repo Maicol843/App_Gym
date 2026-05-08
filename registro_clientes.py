@@ -8,8 +8,6 @@ class RegistroClientes(ctk.CTkFrame):
     def __init__(self, parent):
         # Se inicializa como Frame pasando el padre (container)
         super().__init__(parent, fg_color="transparent")
-
-        # Eliminamos configuración de ventana (title, geometry) ya que ahora es un panel
         
         # ScrollableFrame ahora tiene a 'self' (este Frame) como padre
         self.scroll_frame = ctk.CTkScrollableFrame(self, fg_color="transparent")
@@ -111,7 +109,7 @@ class RegistroClientes(ctk.CTkFrame):
         self.btn_registrar = ctk.CTkButton(self.scroll_frame, text="Registrar", 
                                            width=400, height=50, font=("Arial", 16, "bold"),
                                            fg_color="#198754", hover_color="#146C43", command=self.guardar_datos)
-        self.btn_registrar.pack(pady=40)
+        self.btn_registrar.pack(pady=30)
 
     def seccion_titulo(self, texto):
         ctk.CTkLabel(self.scroll_frame, text=texto, font=("Arial", 18, "bold"), text_color="#0d6efd").pack(pady=(20, 5))
@@ -180,12 +178,12 @@ class RegistroClientes(ctk.CTkFrame):
             fecha_ven_obj = fecha_ins_obj + timedelta(days=dias_plan)
             fecha_ven_bd = fecha_ven_obj.strftime("%Y-%m-%d")
 
-            datos = (
+            # 1. Tupla para la tabla 'clientes' (Sin datos de plan)
+            datos_personales = (
                 nombre, apellido, self.entry_domicilio.get(), self.entry_telefono.get(), 
                 fecha_nac_bd, self.calcular_edad(),
                 float(self.entry_altura.get() or 0), float(self.entry_peso.get() or 0),
-                self.combo_sangre.get(), self.combo_plan.get(), fecha_ins_bd, fecha_ven_bd,
-                self.combo_pago.get(), 
+                self.combo_sangre.get(),
                 self.var_columna.get(), limpiar_texto_ayuda(self.txt_columna),
                 self.var_cardiaco.get(), limpiar_texto_ayuda(self.txt_cardiaco),
                 self.var_lesion.get(), limpiar_texto_ayuda(self.txt_lesion),
@@ -198,20 +196,37 @@ class RegistroClientes(ctk.CTkFrame):
             with sqlite3.connect("gimnasio.db", timeout=20) as conexion:
                 cursor = conexion.cursor()
                 cursor.execute("PRAGMA journal_mode=WAL;")
+                
+                # Inserción en tabla CLIENTES
                 cursor.execute('''INSERT INTO clientes (
                     nombre, apellido, domicilio, telefono, fecha_nacimiento, edad, 
-                    altura, peso, grupo_sanguineo, plan_seleccionado, fecha_inscripcion, fecha_vencimiento,
-                    pago, patologia_columna, detalle_columna, enfermedades_cardiacas, detalle_cardiaco,
-                    lesiones, detalle_lesion, deportes, detalle_deporte, mareos, dolor_cabeza,
-                    desmayos, hemorragias_nasales, dolores_articulares, alteracion,
+                    altura, peso, grupo_sanguineo, patologia_columna, detalle_columna, 
+                    enfermedades_cardiacas, detalle_cardiaco, lesiones, detalle_lesion, 
+                    deportes, detalle_deporte, mareos, dolor_cabeza, desmayos, 
+                    hemorragias_nasales, dolores_articulares, alteracion,
                     problemas_rodilla_tobillo, convulsiones
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', datos)
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', datos_personales)
+                
+                # Obtener el ID del cliente recién creado
+                id_cliente = cursor.lastrowid
+                
+                # 2. Inserción en tabla PLAN_ELEGIDO vinculada por el id_cliente
+                datos_membresia = (
+                    id_cliente, self.combo_plan.get(), fecha_ins_bd, 
+                    fecha_ven_bd, self.combo_pago.get()
+                )
+                
+                cursor.execute('''INSERT INTO plan_elegido (
+                    id_cliente, plan_seleccionado, fecha_inscripcion, 
+                    fecha_vencimiento, pago
+                ) VALUES (?,?,?,?,?)''', datos_membresia)
+                
                 conexion.commit()
             
-            messagebox.showinfo("Éxito", f"Cliente registrado. Vence el: {fecha_ven_obj.strftime('%d-%m-%Y')}")
+            messagebox.showinfo("Éxito", f"Cliente registrado correctamente. Vence el: {fecha_ven_obj.strftime('%d-%m-%Y')}")
             self.limpiar_formulario()
         except Exception as e:
-            messagebox.showerror("Error", f"Ocurrió un error: {e}")
+            messagebox.showerror("Error", f"Ocurrió un error al guardar: {e}")
 
     def limpiar_formulario(self):
         for entry in [self.entry_nombre, self.entry_apellido, self.entry_domicilio, self.entry_telefono, self.entry_nacimiento, self.entry_altura, self.entry_peso]:
@@ -229,7 +244,6 @@ class RegistroClientes(ctk.CTkFrame):
         # Volver al inicio del scroll
         self.scroll_frame._parent_canvas.yview_moveto(0)
 
-# El bloque if __name__ se mantiene solo para pruebas rápidas
 if __name__ == "__main__":
     root = ctk.CTk()
     root.geometry("850x850")

@@ -19,10 +19,6 @@ def crear_base_de_datos():
             altura REAL,
             peso REAL,
             grupo_sanguineo TEXT,
-            plan_seleccionado TEXT,
-            fecha_inscripcion DATE,
-            fecha_vencimiento DATE,
-            pago TEXT DEFAULT 'Pendiente',
             patologia_columna INTEGER DEFAULT 0,
             detalle_columna TEXT,
             enfermedades_cardiacas INTEGER DEFAULT 0,
@@ -42,7 +38,20 @@ def crear_base_de_datos():
         )
     ''')
 
-    # 2. TABLA DE PLANES
+    # 2. TABLA PLAN ELEGIDO
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS plan_elegido (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_cliente INTEGER NOT NULL,
+            plan_seleccionado TEXT,
+            fecha_inscripcion DATE,
+            fecha_vencimiento DATE,
+            pago TEXT DEFAULT 'Pendiente',
+            FOREIGN KEY (id_cliente) REFERENCES clientes(id) ON DELETE CASCADE
+        )
+    ''')
+
+      # 2. TABLA DE PLANES
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS planes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,14 +61,16 @@ def crear_base_de_datos():
         )
     ''')
 
-    # 3. TABLA DE INGRESOS
+   # --- Fragmento modificado de database.py ---
+
+    # 3. TABLA DE INGRESOS 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS ingresos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             id_cliente INTEGER,
+            plan_seleccionado TEXT, 
             monto REAL NOT NULL,
             fecha DATE NOT NULL,
-            detalle TEXT,
             FOREIGN KEY (id_cliente) REFERENCES clientes(id) ON DELETE CASCADE
         )
     ''')
@@ -76,7 +87,7 @@ def crear_base_de_datos():
         )
     ''')
 
-    # 5. TABLA DE RUTINAS (Se agregó video_link)
+    # 5. TABLA DE RUTINAS 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS rutinas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -95,21 +106,9 @@ def crear_base_de_datos():
         )
     ''')
 
-    # --- LÓGICA DE ACTUALIZACIÓN ---
-    try:
-        cursor.execute("ALTER TABLE clientes ADD COLUMN pago TEXT DEFAULT 'Pendiente'")
-    except sqlite3.OperationalError: pass 
-
-    # Agregamos video_link a tablas existentes si no existe
-    try:
-        cursor.execute("ALTER TABLE rutinas ADD COLUMN video_link TEXT")
-    except sqlite3.OperationalError:
-        # La columna ya existe
-        pass
-
     conexion.commit()
     conexion.close()
-    print("Base de datos preparada correctamente.")
+    print("Base de datos actualizada con éxito.")
 
 if __name__ == "__main__":
     crear_base_de_datos()

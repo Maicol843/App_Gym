@@ -17,13 +17,19 @@ class ControlGastos(ctk.CTkFrame):
         self.datos_totales = []
         self.canvas_grafica = None 
 
+        # --- CONTENEDOR DESPLAZABLE (Barra lateral derecha) ---
+        # Este frame contendrá todo el diseño original y permitirá el scroll
+        self.scroll_principal = ctk.CTkScrollableFrame(self, fg_color="transparent")
+        self.scroll_principal.pack(fill="both", expand=True)
+
         # --- CABECERA ---
-        self.frame_top = ctk.CTkFrame(self, fg_color="transparent")
+        # Nota: Ahora todos los elementos se empaquetan en 'self.scroll_principal'
+        self.frame_top = ctk.CTkFrame(self.scroll_principal, fg_color="transparent")
         self.frame_top.pack(pady=20, padx=20, fill="x")
         ctk.CTkLabel(self.frame_top, text="EGRESOS", font=("Arial", 28, "bold")).pack(side="left")
 
         # --- PANEL DE CONTROLES ---
-        self.frame_controles = ctk.CTkFrame(self, fg_color="transparent")
+        self.frame_controles = ctk.CTkFrame(self.scroll_principal, fg_color="transparent")
         self.frame_controles.pack(pady=10, padx=20, fill="x")
 
         self.entry_busqueda = ctk.CTkEntry(self.frame_controles, placeholder_text="Buscar por detalle...", width=250)
@@ -48,13 +54,13 @@ class ControlGastos(ctk.CTkFrame):
         self.btn_grafica.pack(side="left", padx=5)
 
         # --- CONTENEDOR PRINCIPAL ---
-        self.contenedor_principal = ctk.CTkFrame(self)
+        self.contenedor_principal = ctk.CTkFrame(self.scroll_principal)
         self.contenedor_principal.pack(pady=10, padx=20, fill="both", expand=True)
 
         self.crear_tabla_visual()
 
         # --- RESUMEN ---
-        self.frame_resumen = ctk.CTkFrame(self, fg_color="#1a1a1a", height=50)
+        self.frame_resumen = ctk.CTkFrame(self.scroll_principal, fg_color="#1a1a1a", height=50)
         self.frame_resumen.pack(pady=5, padx=20, fill="x")
         
         self.lbl_total_egresos = ctk.CTkLabel(self.frame_resumen, text="TOTAL EGRESOS: $ 0.00", 
@@ -62,7 +68,7 @@ class ControlGastos(ctk.CTkFrame):
         self.lbl_total_egresos.pack(side="right", padx=20, pady=10)
 
         # --- PAGINACIÓN ---
-        self.frame_paginacion = ctk.CTkFrame(self, fg_color="transparent")
+        self.frame_paginacion = ctk.CTkFrame(self.scroll_principal, fg_color="transparent")
         self.frame_paginacion.pack(pady=15)
 
         self.btn_prev = ctk.CTkButton(self.frame_paginacion, text="Anterior", width=80, command=self.pagina_anterior)
@@ -76,6 +82,7 @@ class ControlGastos(ctk.CTkFrame):
 
         self.cargar_datos_db()
 
+    # Los demás métodos permanecen exactamente igual
     def alternar_vista_grafica(self):
         if self.canvas_grafica:
             self.canvas_grafica.get_tk_widget().destroy()
@@ -95,7 +102,6 @@ class ControlGastos(ctk.CTkFrame):
         try:
             with sqlite3.connect("gimnasio.db") as conn:
                 cursor = conn.cursor()
-                # Ajuste: substr para extraer el mes de 'dd-mm-aaaa' (posiciones 4 y 5)
                 cursor.execute("SELECT CAST(substr(fecha, 4, 2) AS INTEGER) as mes_num, SUM(importe) FROM egresos GROUP BY mes_num")
                 for mes, total in cursor.fetchall():
                     if mes: egresos_mensuales[mes] = total
@@ -127,9 +133,9 @@ class ControlGastos(ctk.CTkFrame):
         style = ttk.Style()
         style.theme_use("clam")
         style.configure("Treeview", background="#1f538d", foreground="white", fieldbackground="#2b2b2b", 
-                        rowheight=40, font=("Arial", 14)) # Letra más grande
+                        rowheight=40, font=("Arial", 14))
         style.configure("Treeview.Heading", background="#333", foreground="white", 
-                        font=("Arial", 14, "bold")) # Cabecera más grande
+                        font=("Arial", 14, "bold"))
         
         columnas = ("Nro", "Fecha", "Detalle", "Cantidad", "P. Unitario", "Importe", "ID")
         self.tabla = ttk.Treeview(self.frame_tabla, columns=columnas, show="headings")
@@ -147,7 +153,6 @@ class ControlGastos(ctk.CTkFrame):
         try:
             with sqlite3.connect("gimnasio.db") as conn:
                 cursor = conn.cursor()
-                # Ordenamos por ID descendente para ver lo último primero si las fechas son iguales
                 query = "SELECT fecha, detalle, cantidad, p_unit, importe, id FROM egresos WHERE detalle LIKE ? ORDER BY id DESC"
                 cursor.execute(query, (f'%{termino}%',))
                 self.datos_totales = cursor.fetchall()
@@ -161,7 +166,6 @@ class ControlGastos(ctk.CTkFrame):
         inicio = (self.pagina_actual - 1) * self.registros_por_pagina
         datos_pagina = self.datos_totales[inicio:inicio + self.registros_por_pagina]
         for i, row in enumerate(datos_pagina, start=inicio + 1):
-            # Mostramos la fecha tal cual está en la DB (dd-mm-aaaa)[cite: 17]
             self.tabla.insert("", "end", values=(i, row[0], row[1], row[2], f"${row[3]:,.2f}", f"${row[4]:,.2f}", row[5]))
         total_pag = max(1, (len(self.datos_totales) + self.registros_por_pagina - 1) // self.registros_por_pagina)
         self.label_paginas.configure(text=f"Página {self.pagina_actual} de {total_pag}")
@@ -179,13 +183,12 @@ class ControlGastos(ctk.CTkFrame):
         modal.geometry("400x550")
         modal.grab_set()
 
-        # NUEVO: Fecha en formato dd-mm-aaaa[cite: 17]
         ctk.CTkLabel(modal, text="Fecha (DD-MM-AAAA):").pack(pady=(10, 0))
         entry_fec = ctk.CTkEntry(modal, placeholder_text="DD-MM-AAAA", width=300)
         entry_fec.pack(pady=5)
         
         if not editar_datos:
-            entry_fec.insert(0, datetime.now().strftime("%d-%m-%Y")) # Por defecto hoy[cite: 17]
+            entry_fec.insert(0, datetime.now().strftime("%d-%m-%Y"))
 
         entry_det = ctk.CTkEntry(modal, placeholder_text="Detalle", width=300)
         entry_det.pack(pady=15)
@@ -196,7 +199,7 @@ class ControlGastos(ctk.CTkFrame):
 
         if editar_datos:
             entry_fec.delete(0, "end")
-            entry_fec.insert(0, editar_datos[1]) # Carga fecha dd-mm-aaaa[cite: 17]
+            entry_fec.insert(0, editar_datos[1])
             entry_det.insert(0, editar_datos[2])
             entry_cant.insert(0, editar_datos[3])
             p_limpio = str(editar_datos[4]).replace("$", "").replace(",", "")
@@ -209,8 +212,6 @@ class ControlGastos(ctk.CTkFrame):
                 cant = int(entry_cant.get())
                 p_u = float(entry_punit.get())
                 imp = cant * p_u
-
-                # Validamos formato dd-mm-aaaa[cite: 17]
                 datetime.strptime(fec, "%d-%m-%Y")
 
                 with sqlite3.connect("gimnasio.db") as conn:
@@ -229,7 +230,6 @@ class ControlGastos(ctk.CTkFrame):
 
         ctk.CTkButton(modal, text="GUARDAR", command=guardar).pack(pady=20)
 
-    # ... (Siguen métodos eliminar_gasto, restablecer_base_datos, pagina_siguiente, pagina_anterior iguales)
     def eliminar_gasto(self):
         item = self.tabla.selection()
         if not item:

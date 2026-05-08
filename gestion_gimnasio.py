@@ -2,8 +2,10 @@ import customtkinter as ctk
 from tkinter import messagebox, ttk
 import sqlite3
 
-class GestionGimnasio(ctk.CTkFrame): # Modificado para ser un Frame
-    def __init__(self, parent):      # Recibe el contenedor padre
+# Modificado para heredar de CTkScrollableFrame
+class GestionGimnasio(ctk.CTkScrollableFrame): 
+    def __init__(self, parent):      
+        # Se inicializa como CTkScrollableFrame
         super().__init__(parent, fg_color="transparent")
 
         # Título de la sección
@@ -32,6 +34,8 @@ class GestionGimnasio(ctk.CTkFrame): # Modificado para ser un Frame
         self.btn_guardar.grid(row=0, column=6, padx=15, pady=20)
 
         # --- TABLA DE PLANES ---
+        # Nota: La Treeview de ttk no es scrollable nativamente por el CTkScrollableFrame,
+        # pero ahora todo el contenido de la pestaña se podrá desplazar hacia arriba/abajo.
         self.crear_tabla()
         self.cargar_datos_tabla()
 
@@ -53,7 +57,12 @@ class GestionGimnasio(ctk.CTkFrame): # Modificado para ser un Frame
                         fieldbackground="#2b2b2b", rowheight=35, font=("Arial", 11))
         style.map("Treeview", background=[('selected', '#1f538d')])
 
-        self.tabla = ttk.Treeview(self, columns=("N°", "Nombre", "Precio", "Días"), show="headings")
+        # El contenedor de la tabla debe ser un frame para que el scroll del CTkScrollableFrame 
+        # no entre en conflicto con el layout expandible de la Treeview
+        self.tabla_container = ctk.CTkFrame(self, fg_color="transparent")
+        self.tabla_container.pack(pady=10, padx=20, fill="x")
+
+        self.tabla = ttk.Treeview(self.tabla_container, columns=("N°", "Nombre", "Precio", "Días"), show="headings", height=10)
         self.tabla.heading("N°", text="Nro.")
         self.tabla.heading("Nombre", text="Plan")
         self.tabla.heading("Precio", text="Precio")
@@ -64,7 +73,7 @@ class GestionGimnasio(ctk.CTkFrame): # Modificado para ser un Frame
         self.tabla.column("Precio", width=150, anchor="center")
         self.tabla.column("Días", width=150, anchor="center")
 
-        self.tabla.pack(pady=10, padx=20, fill="both", expand=True)
+        self.tabla.pack(fill="x")
 
     def guardar_plan(self):
         n = self.entry_nombre_plan.get()
@@ -100,7 +109,6 @@ class GestionGimnasio(ctk.CTkFrame): # Modificado para ser un Frame
                 cursor.execute("CREATE TABLE IF NOT EXISTS planes (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre_plan TEXT, precio REAL, dias INTEGER)")
                 cursor.execute("SELECT nombre_plan, precio, dias, id FROM planes")
                 for i, fila in enumerate(cursor.fetchall(), start=1):
-                    # El ID real de la DB se guarda oculto en los valores para poder editar/eliminar
                     self.tabla.insert("", "end", values=(i, fila[0], f"$ {fila[1]:.2f}", fila[2], fila[3]))
         except Exception as e:
             print(f"Error cargando tabla: {e}")
@@ -113,10 +121,9 @@ class GestionGimnasio(ctk.CTkFrame): # Modificado para ser un Frame
         
         item_data = self.tabla.item(selected)['values']
         
-        # Ventana modal (Toplevel sigue siendo necesario para diálogos emergentes)
         modal = ctk.CTkToplevel(self)
         modal.title("Editar Plan")
-        modal.geometry("400x400")
+        modal.geometry("400x450")
         modal.attributes("-topmost", True)
 
         ctk.CTkLabel(modal, text="Editar Plan", font=("Arial", 18, "bold")).pack(pady=20)
@@ -126,7 +133,7 @@ class GestionGimnasio(ctk.CTkFrame): # Modificado para ser un Frame
         en.pack(pady=10)
         
         ep = ctk.CTkEntry(modal, width=250, placeholder_text="Precio")
-        ep.insert(0, item_data[2].replace("$ ", ""))
+        ep.insert(0, str(item_data[2]).replace("$ ", ""))
         ep.pack(pady=10)
         
         ed = ctk.CTkEntry(modal, width=250, placeholder_text="Días")

@@ -26,15 +26,22 @@ class VerMembresia(ctk.CTkFrame):
             return fecha_db
 
     def obtener_datos(self):
+        """Obtiene el último plan registrado para el cliente desde plan_elegido."""
         try:
             with sqlite3.connect("gimnasio.db") as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
+                # La consulta busca el registro con el ID más alto (el último) para este cliente
                 query = """
-                    SELECT c.nombre, c.apellido, c.fecha_inscripcion, c.fecha_vencimiento, 
-                           c.plan_seleccionado, c.pago, p.dias, p.precio
+                    SELECT c.nombre, c.apellido, p.fecha_inscripcion, p.fecha_vencimiento, 
+                           p.plan_seleccionado, p.pago, pl.dias, pl.precio
                     FROM clientes c
-                    LEFT JOIN planes p ON c.plan_seleccionado = p.nombre_plan
+                    LEFT JOIN plan_elegido p ON p.id = (
+                        SELECT id FROM plan_elegido 
+                        WHERE id_cliente = c.id 
+                        ORDER BY id DESC LIMIT 1
+                    )
+                    LEFT JOIN planes pl ON p.plan_seleccionado = pl.nombre_plan
                     WHERE c.id = ?
                 """
                 cursor.execute(query, (self.id_cliente,))
@@ -55,30 +62,26 @@ class VerMembresia(ctk.CTkFrame):
         card = ctk.CTkFrame(self.scroll_frame, fg_color="#2b2b2b", corner_radius=15)
         card.pack(pady=10, padx=50, fill="x")
 
-        # --- LÓGICA DE COLORES PARA EL PAGO ---
+        # Lógica de colores según el estado
         estado_pago = m['pago'] if m['pago'] else "Pendiente"
-        
-        # Pendiente = Amarillo (#FFCC00)
-        # Realizado = Verde (#2ecc71)
-        # No Pago = Rojo (#e74c3c)
         if estado_pago == "Realizado":
             color_pago = "#198754"
         elif estado_pago == "Pendiente":
             color_pago = "#ffc107"
-        else: # "No Pago" u otros
+        else: 
             color_pago = "#dc3545"
 
         fecha_ins_bonita = self.formatear_fecha_gui(m['fecha_inscripcion'])
         fecha_ven_bonita = self.formatear_fecha_gui(m['fecha_vencimiento'])
 
-        self.crear_item_dato(card, "Plan Actual:", m['plan_seleccionado'])
+        self.crear_item_dato(card, "Plan Actual:", m['plan_seleccionado'] if m['plan_seleccionado'] else "Sin Plan")
         self.crear_item_dato(card, "Estado de Pago:", estado_pago, color_personalizado=color_pago)
         self.crear_item_dato(card, "Fecha de Inscripción:", fecha_ins_bonita)
         self.crear_item_dato(card, "Fecha de Vencimiento:", fecha_ven_bonita, destacado=True)
-        self.crear_item_dato(card, "Duración del Plan:", f"{m['dias']} días")
-        self.crear_item_dato(card, "Precio del Plan:", f"$ {m['precio']}")
+        self.crear_item_dato(card, "Duración del Plan:", f"{m['dias'] if m['dias'] else 0} días")
+        self.crear_item_dato(card, "Precio del Plan:", f"$ {m['precio'] if m['precio'] else 0}")
 
-        ctk.CTkButton(self.scroll_frame, text="Editar", 
+        ctk.CTkButton(self.scroll_frame, text="Renovar", 
                      fg_color="#6610f2", hover_color="#520DC2", height=50, 
                      font=("Arial", 16, "bold"),
                      command=lambda: self.abrir_modal_renovacion(m)).pack(pady=40)
@@ -86,12 +89,7 @@ class VerMembresia(ctk.CTkFrame):
     def crear_item_dato(self, parent, label, valor, destacado=False, color_personalizado=None):
         f = ctk.CTkFrame(parent, fg_color="transparent")
         f.pack(fill="x", padx=30, pady=10)
-        
-        if color_personalizado:
-            color_val = color_personalizado
-        else:
-            color_val = "#e74c3c" if destacado else "white" 
-            
+        color_val = color_personalizado if color_personalizado else ("#e74c3c" if destacado else "white")
         ctk.CTkLabel(f, text=label, font=("Arial", 14, "bold"), width=200, anchor="w").pack(side="left")
         ctk.CTkLabel(f, text=str(valor), font=("Arial", 14), text_color=color_val).pack(side="left", padx=10)
 
@@ -116,10 +114,10 @@ class VerMembresia(ctk.CTkFrame):
 
         ctk.CTkLabel(modal, text="Seleccionar Plan:").pack(pady=(10,0))
         combo_plan = ctk.CTkOptionMenu(modal, values=self.obtener_lista_planes(), width=250)
-        combo_plan.set(datos_actuales['plan_seleccionado'])
+        if datos_actuales['plan_seleccionado']:
+            combo_plan.set(datos_actuales['plan_seleccionado'])
         combo_plan.pack(pady=5)
 
-        # Se agrega "No Pago" a las opciones del menú
         ctk.CTkLabel(modal, text="Estado del Pago:").pack(pady=(10,0))
         combo_pago = ctk.CTkOptionMenu(modal, values=["Pendiente", "Realizado", "No Pago"], width=250)
         combo_pago.set(datos_actuales['pago'] if datos_actuales['pago'] else "Pendiente")
@@ -149,18 +147,20 @@ class VerMembresia(ctk.CTkFrame):
                     dias = resultado[0]
                     nueva_fecha_ven = fecha_inicio_obj + timedelta(days=dias)
                     
+                    # INSERCIÓN EN LUGAR DE UPDATE: 
+                    # Se crea un nuevo registro para mantener el historial del cliente
                     cursor.execute("""
-                        UPDATE clientes 
-                        SET plan_seleccionado = ?, 
-                            fecha_inscripcion = ?, 
-                            fecha_vencimiento = ?,
-                            pago = ?
-                        WHERE id = ?
-                    """, (nuevo_plan, fecha_inicio_obj.strftime("%Y-%m-%d"), 
-                          nueva_fecha_ven.strftime("%Y-%m-%d"), nuevo_estado_pago, self.id_cliente))
+                        INSERT INTO plan_elegido (
+                            id_cliente, plan_seleccionado, fecha_inscripcion, 
+                            fecha_vencimiento, pago
+                        ) VALUES (?, ?, ?, ?, ?)
+                    """, (self.id_cliente, nuevo_plan, 
+                          fecha_inicio_obj.strftime("%Y-%m-%d"), 
+                          nueva_fecha_ven.strftime("%Y-%m-%d"), 
+                          nuevo_estado_pago))
                     conn.commit()
 
-                messagebox.showinfo("Éxito", "Membresía actualizada correctamente.")
+                messagebox.showinfo("Éxito", "Membresía renovada correctamente.")
                 modal.destroy()
                 self.cargar_datos_membresia() 
             except ValueError:
